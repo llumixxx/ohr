@@ -6,7 +6,7 @@ OHR.$ = id => document.getElementById(id);
 OHR.esc = s => String(s).replace(/[&<>"']/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]));
 OHR.smooth = () => !(window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches);
 OHR.ATTRS = ["지","수","화","풍"];
-OHR.ATTR_COLOR = { "지":"#7fcf6b", "수":"#6db6ff", "화":"#ff7a5c", "풍":"#f2cf5b" };
+OHR.ATTR_COLOR = { "지":"#4aa84a", "수":"#3d8ee0", "화":"#e5604a", "풍":"#d29a00" };
 OHR.CATS = ["필드포획","퀘스트","희귀","레이드","복권","듀얼","환생,진화","지원","기타"];
 OHR.catOf = p => OHR.CATS.indexOf(p.cat) >= 0 ? p.cat : "기타";
 
