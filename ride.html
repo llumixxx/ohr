@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>OHR Mate - 승차감</title>
+<meta name="description" content="내 캐릭터 기본치 기준으로 펫을 탔을 때 능력치가 얼마나 오르고 내리는지 순위로 보여줘요">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Jua&family=Noto+Sans+KR:wght@400;500;700;900&display=swap" rel="stylesheet">
+<link rel="preload" href="pets.json" as="fetch" crossorigin>
+<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="ride.css">
+</head>
+<body>
+<div id="siteNav"></div>
+
+<main class="shell">
+  <div class="page-head">
+    <h1 class="page-title">승차감 랭킹</h1>
+    <p class="page-sub">내 캐릭터 기본치 기준으로, 펫을 타면 능력치가 얼마나 오르고 내리는지 보여줘요</p>
+  </div>
+  <div class="ride-layout">
+    <aside class="box rd-ctl" id="rdCtl">
+      <div class="f-title">내 기본치 <small>BASE STATUS</small></div>
+      <div class="rd-base" id="rdBase"></div>
+      <div class="f-title">펫 레벨</div>
+      <div id="rdLvBox"></div>
+      <div class="f-title">정렬 기준</div>
+      <div class="f-seg" id="rdSort"></div>
+      <label class="sw-row"><input type="checkbox" id="rdReborn"><span class="sw-track"><span class="sw-thumb"></span></span><span class="sw-text">환생·진화 펫도 보기</span></label>
+      <p class="fine" id="rdHelp">탑승 능력치 = 표시값 + 0.3 × (펫 − 내 기본치). 내구는 계산에 쓰지 않아요.</p>
+    </aside>
+
+    <section class="box rd-main">
+      <div class="box-h"><span class="ico b">🚀</span><h2 id="rdTitle">탑승 가능 펫</h2><span class="stale-note" id="rdWarn" hidden>내 기본치를 넣으면 정확해져요</span></div>
+      <div class="rd-list" id="rdList"><div class="empty">펫 정보를 불러오는 중이에요…</div></div>
+    </section>
+  </div>
+</main>
+<script src="nav.js"></script>
+<script src="common.js"></script>
+<script src="ride.js"></script>
+</body>
+</html>
