@@ -11,16 +11,26 @@ let ITEMS = [], byId = new Map(), list = [];
 const LABELS = [["atk", "공"], ["def", "방"], ["agi", "순"], ["hp", "내"], ["crit", "크리"], ["evas", "회피"], ["acc", "명중"], ["pen", "관통"], ["shld", "\uc274\ub4dc"]];
 const CAT_ORDER = ["초보자", "무기", "방어구", "장신구", "토템", "보조", "소모", "캐릭터", "기타"];
 const maxOf = (it, k) => it.n[k] ? it.n[k][1] : -Infinity;
-/* 합능 = 공 + 방 + 순 + 내구÷3 (쟈쟈 아이템 도감과 같은 식, 범위가 있으면 큰 쪽 수치) */
+/* 합능 = 공 + 방 + 순 + 내구÷3 (쟈쟈 아이템 도감과 같은 식). 플러스는 최대치, 마이너스는 페널티가 가장 작은 쪽(0에 가까운 값) */
 const hasBase = it => ["atk", "def", "agi", "hp"].some(k => it.n[k]);
 const totalOf = it => ["atk", "def", "agi"].reduce((a, k) => a + (it.n[k] ? it.n[k][1] : 0), 0) + (it.n.hp ? it.n.hp[1] : 0)/3;
 const fmtTotal = v => { const r = Math.round(v*100)/100; return (r > 0 ? "+" : "") + r; };
 const tcls = v => v > 0 ? "tpos" : v < 0 ? "tneg" : "tzero";
 
+/* 공홈은 페널티 범위를 "-15~24"처럼 적어요. 뒤 숫자도 마이너스(-15~-24)라는 뜻이라 부호를 맞춰줘요 */
+const fixRaw = t => String(t).replace(/^(-\d+(?:\.\d+)?)~(\d+(?:\.\d+)?)/, "$1~-$2");
+function rangeOf(t){
+  const m = String(t).replace(/[+%\s]/g, "").match(/^(-?\d+(?:\.\d+)?)(?:~(-?\d+(?:\.\d+)?))?$/);
+  if(!m) return null;
+  const a = +m[1], b = m[2] !== undefined ? +m[2] : a;
+  return [Math.min(a, b), Math.max(a, b)];
+}
 function norm(r){
   if(!r || !r.name) return null;
+  const s = {}, n = {};
+  Object.keys(r.s || {}).forEach(k => { const t = fixRaw(r.s[k]), g = rangeOf(t); if(g){ s[k] = t; n[k] = g; } });
   return { id:String(r.id), name:String(r.name), cat:String(r.cat || "기타"), obtain:String(r.obtain || ""), desc:String(r.desc || ""),
-    s:r.s || {}, n:r.n || {}, attr:String(r.attr || ""), img:String(r.assetImage || r.img || ""), _cho:OHR.chosung(String(r.name)) };
+    s, n, attr:String(r.attr || ""), img:String(r.assetImage || r.img || ""), _cho:OHR.chosung(String(r.name)) };
 }
 /* ===== 필터와 정렬 ===== */
 function matches(it){
