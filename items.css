@@ -10,3 +10,8 @@
 .m-grid.five{grid-template-columns:repeat(5,1fr)}
 .m-grid.five .m-box b{font-size:16px}
 @media (max-width:640px){ .m-grid.five{grid-template-columns:repeat(3,1fr)} }
+.ic-total{display:inline-flex;align-items:baseline;gap:5px}
+.ic-total i{font-style:normal;font-size:10.5px;font-weight:700;color:var(--ink3)}
+.ic-total b{font-size:17px;font-weight:900;letter-spacing:-.03em;font-variant-numeric:tabular-nums}
+.tpos{color:#1c7a55} .tneg{color:#c4455a} .tzero{color:var(--ink3)}
+.m-total .tv{font-weight:900;font-size:19px;font-variant-numeric:tabular-nums}
