@@ -273,7 +273,7 @@ function fun(eightPct, top){
   }
   if(eightPct < 1) return "아주 희미하지만 환각 가능성이 있어요.";
   if(eightPct < 5) return "나쁘지 않은 확률이에요. 기대해볼 만해요.";
-  if(eightPct < 15) return "꽤 쏔쏔한 확률이에요.";
+  if(eightPct < 15) return "꽤 괜찮은 확률이에요.";
   if(eightPct < 30) return "이 정도면 기대해도 돼요.";
   return "사실상 환각 확정급이에요.";
 }
