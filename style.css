@@ -272,11 +272,11 @@ table.t th:first-child,table.t td:first-child{text-align:left}
 }
 @media (max-width:640px){
   :root{--wrap:calc(100% - 24px);--r-lg:22px}
-  .top-in{height:52px;gap:10px}
+  .top-in{height:52px;gap:6px}
   .brand{font-size:24px}
   .brand small{display:none}
-  .menu{justify-content:flex-end}
-  .menu a{padding:6px 12px;font-size:14px}
+  .menu{justify-content:flex-start;gap:0}
+  .menu a{padding:6px 10px;font-size:13.5px}
   .shell{margin:16px auto 50px}
   .box{padding:20px 16px}
   .calc-layout{gap:14px}
