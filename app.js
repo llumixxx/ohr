@@ -71,8 +71,16 @@ function growthRange(origin, bounds, list){
 const STAT_LABELS = ["내구력","공격력","방어력","순발력"];
 const GROW_LABELS = ["내구","공격","방어","순발"];
 const GROW_KEYS = ["h","a","d","s"];
-let PETS = [], byId = new Map();
+let PETS = [], byId = new Map(), RANKTAB = null, MAXG = [1,1,1,1,1];
 const state = { sel:null, stat:[0,0,0,0] };
+const totalOf = p => p.growthS[1] + p.growthS[2] + p.growthS[3];
+function buildRanks(){
+  RANKTAB = [0,1,2,3].map(i => PETS.map(p => p.growthS[i]));
+  RANKTAB.push(PETS.map(totalOf));
+  MAXG = RANKTAB.map(col => Math.max(...col, 0.0001));
+}
+const bar = (v, i) => `<span class="mb"><i style="width:${Math.max(3, Math.min(100, v/MAXG[i]*100)).toFixed(1)}%"></i></span>`;
+const rankOf = (v, i) => 1 + RANKTAB[i].filter(x => x > v + 1e-9).length;
 
 /* ===== 선택한 펫 ===== */
 const VARIANT_ORDER = ["일반","환생","진화","환생·진화"];
@@ -92,7 +100,9 @@ function renderHero(p){
   $("hTags").innerHTML = (p.rideable ? '<span class="tag ride">탑승 가능</span>' : "") + (p.approx ? '<span class="tag">추정 데이터</span>' : "") + (!p.ok ? '<span class="tag">계산 미지원</span>' : "");
   $("hHow").textContent = p.detail ? "획득 방법: " + p.detail : "";
   $("hAttrs").innerHTML = p.attrs.map(([n, v]) => `<div class="attr-row"><span style="color:${ATTR_COLOR[n] || "var(--acc)"}">${esc(n)}</span><div class="track"><i style="width:${Number(v)*10}%;background:${ATTR_COLOR[n] || "var(--acc)"}"></i></div><span class="v">${esc(v)}/10</span></div>`).join("");
-  $("hStats").innerHTML = GROW_KEYS.map((k, i) => `<tr class="${k}"><td>${GROW_LABELS[i]}</td><td class="g">${f3(p.growthS[i])}</td><td>${p.initS[i]}</td></tr>`).join("");
+  $("hStats").innerHTML = GROW_KEYS.map((k, i) => `<tr class="${k}"><td>${GROW_LABELS[i]}</td><td class="g">${f3(p.growthS[i])}${bar(p.growthS[i], i)}</td><td class="rk">${rankOf(p.growthS[i], i)}위</td><td>${p.initS[i]}</td></tr>`).join("")
+    + `<tr class="t"><td>총성장</td><td class="g">${f3(totalOf(p))}${bar(totalOf(p), 4)}</td><td class="rk">${rankOf(totalOf(p), 4)}위</td><td class="rk">공+방+순</td></tr>`;
+  $("hRankNote").textContent = `순위는 전체 ${PETS.length}마리 중 성장률이 높은 순서예요`;
   $("dexLink").href = "pokedex.html#" + encodeURIComponent(p.id);
   setSprite(p);
 }
@@ -135,17 +145,48 @@ function bindPicker(){
 /* ===== 초기치 입력 ===== */
 function renderStats(p){
   $("statGrid").innerHTML = STAT_LABELS.map((lbl, i) => `
-    <div class="stat-box"><span class="slabel" id="sl-${i}">${lbl} <i>(S급 ${p.initS[i]})</i></span>
+    <div class="stat-box"><span class="slabel" id="sl-${i}">${lbl} <i>(S급 ${p.initS[i]})</i><b class="df" id="df-${i}"></b></span>
       <div class="stp" role="group" aria-labelledby="sl-${i}"><button type="button" class="sb" data-i="${i}" data-d="-1" aria-label="${lbl} 줄이기">−</button>
       <input class="si" type="number" inputmode="numeric" min="0" id="stat-${i}" value="${state.stat[i]}" ${p.ok ? "" : "disabled"}>
       <button type="button" class="sb" data-i="${i}" data-d="1" aria-label="${lbl} 늘리기">+</button></div></div>`).join("");
   $("calcBtn").disabled = !p.ok;
+  updateExtras();
+}
+/* ===== 차이 표시와 초기치 모양(레이더) ===== */
+function updateExtras(){
+  const p = state.sel; if(!p) return;
+  state.stat.forEach((v, i) => {
+    const el = $("df-" + i); if(!el) return;
+    const d = v - p.initS[i];
+    el.className = "df " + (d === 0 ? "eq" : d > 0 ? "up" : "dn");
+    el.textContent = d === 0 ? "S급과 같아요" : (d > 0 ? "+" : "−") + Math.abs(d);
+  });
+  drawRadar();
+}
+function drawRadar(){
+  const p = state.sel, box = $("radar"); if(!p || !box) return;
+  const S = p.initS, V = state.stat, cx = 130, cy = 118, R = 80;
+  const ang = [-90, 0, 90, 180].map(a => a*Math.PI/180);
+  const pt = (i, f) => [cx + Math.cos(ang[i])*R*f, cy + Math.sin(ang[i])*R*f];
+  const poly = fs => [0,1,2,3].map(i => pt(i, fs[i]).map(n => n.toFixed(1)).join(",")).join(" ");
+  const fv = [0,1,2,3].map(i => S[i] > 0 ? Math.min(1.25, V[i]/S[i])*0.8 : 0);
+  const rings = [0.4, 0.8, 1.0].map(f => `<polygon points="${poly([f,f,f,f])}" class="rg"/>`).join("");
+  const axes = [0,1,2,3].map(i => { const q = pt(i, 1); return `<line x1="${cx}" y1="${cy}" x2="${q[0].toFixed(1)}" y2="${q[1].toFixed(1)}" class="ax"/>`; }).join("");
+  const lab = (x, y, t, a) => `<text x="${x}" y="${y}" text-anchor="${a}" class="rl">${t}</text>`;
+  box.innerHTML = `<svg viewBox="0 0 260 240" role="img" aria-label="입력한 초기치와 S급 초기치 비교">
+    <defs><linearGradient id="rgd" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#5aa9f0" stop-opacity=".5"/><stop offset="1" stop-color="#3fc29a" stop-opacity=".4"/></linearGradient></defs>
+    ${rings}${axes}
+    <polygon points="${poly([0.8,0.8,0.8,0.8])}" class="rs"/>
+    <polygon points="${poly(fv)}" class="ri"/>
+    ${lab(cx, 22, "내구 " + V[0], "middle")}${lab(cx + R + 12, cy + 4, "공격 " + V[1], "start")}${lab(cx, cy + R + 24, "방어 " + V[2], "middle")}${lab(cx - R - 12, cy + 4, "순발 " + V[3], "end")}
+  </svg>`;
 }
 let calcTimer = null;
 function scheduleCalc(){ clearTimeout(calcTimer); calcTimer = setTimeout(runCalc, 150); }
 function bumpStat(i, d){
   state.stat[i] = Math.max(0, state.stat[i] + d);
   const el = $("stat-" + i); if(el) el.value = state.stat[i];
+  updateExtras();
   scheduleCalc();
 }
 let holdT = null, holdIv = null;
@@ -166,13 +207,18 @@ function bindStats(){
     const inp = e.target.closest(".si"); if(!inp) return;
     const i = Number(inp.id.replace("stat-", ""));
     const v = Math.max(0, Math.round(Number(inp.value) || 0));
-    state.stat[i] = v; inp.value = v; scheduleCalc();
+    state.stat[i] = v; inp.value = v; updateExtras(); scheduleCalc();
   });
-  $("calcBtn").addEventListener("click", runCalc);
+  $("calcBtn").addEventListener("click", e => {
+    runCalc(); OHR.haptic(24);
+    const c = state.res;
+    if(c && c.total && c.counts[8]){ const r = e.currentTarget.getBoundingClientRect(); OHR.spark(r.left + r.width/2, r.top + r.height/2); }
+  });
   $("resetBtn").addEventListener("click", () => {
     const p = state.sel; if(!p) return;
     state.stat = p.initS.slice();
     state.stat.forEach((v, i) => { const el = $("stat-" + i); if(el) el.value = v; });
+    updateExtras();
     runCalc();
   });
   $("vTabs").addEventListener("click", e => {
@@ -215,15 +261,19 @@ function renderResults(p, c){
   const box = $("results");
   if(c.total === 0){
     const same = state.stat.every((v, i) => v === p.initS[i]);
+    box.classList.remove("shake"); void box.offsetWidth; box.classList.add("shake");
     box.innerHTML = `<div class="empty">${same ? "참고 초기치와 맞는 조합을 찾지 못했어요. 참고 초기치는 실제 개체와 다를 수 있으니 레벨 1 실제 수치를 넣어주세요." : `입력한 초기치(${state.stat.join(" / ")})와 맞는 조합을 찾지 못했어요. 레벨 1 수치를 확인해 주세요.`}</div>`;
     return;
   }
   const top = GRADES.find(g => c.counts[g]);
   const eight = (c.counts[8] || 0)/c.total*100;
-  const rows = GRADES.filter(g => c.counts[g]).map(g => {
-    const pc = c.counts[g]/c.total*100;
-    return `<div class="drow${g === top ? " top" : ""}"><span class="gl">${g}등급</span><div class="gt"><div class="gf" style="width:${pc.toFixed(2)}%;background:${gcol(g)}"></div></div><span class="gp">${pc.toFixed(1)}%</span></div>`;
-  }).join("");
+  let neg = 0;
+  GRADES.forEach(g => { if(g < 0) neg += c.counts[g] || 0; });
+  const rowFor = (label, n, g, hot) => {
+    const pc = n/c.total*100;
+    return `<div class="drow${hot ? " top" : ""}${n ? "" : " zero"}"><span class="gl">${label}</span><div class="gt"><div class="gf" style="width:${pc.toFixed(2)}%;background:${gcol(g)}"></div></div><span class="gp">${n ? pc.toFixed(1) + "%" : "–"}</span></div>`;
+  };
+  const rows = [8,7,6,5,4,3,2,1,0].map(g => rowFor(g + "등급", c.counts[g] || 0, g, g === top)).join("") + rowFor("−1 이하", neg, -4, top < 0);
   const b = rankBounds(p.origin);
   const rangeRows = GRADES.filter(g => c.counts[g]).map(g => {
     const r = growthRange(p.origin, b, c.matches[g]);
@@ -246,6 +296,10 @@ function renderResults(p, c){
       <select class="sel-grade" id="gradeSel" aria-label="등급 선택">${GRADES.filter(g => c.counts[g]).map(g => `<option value="${g}">${g}등급 (${c.counts[g]}개)</option>`).join("")}</select>
       <div class="tbl-wrap" id="comboTbl"></div>
     </div></details>`;
+  box.querySelectorAll(".res-card").forEach((el, i) => { el.classList.add("pop"); el.style.animationDelay = (i*80) + "ms"; });
+  const nums = box.querySelectorAll(".res-v strong");
+  OHR.countUp(nums[0], top, 0, 450);
+  OHR.countUp(nums[1], eight, 2, 650);
   const fillCombos = () => {
     const g = Number($("gradeSel").value), list = c.matches[g] || [], cap = 200;
     $("comboTbl").innerHTML = `<table class="t"><thead><tr><th>등급 보정(내/공/방/순)</th><th>보너스 분배</th><th>계산값(내림 전)</th></tr></thead><tbody>${list.slice(0, cap).map(m => `<tr><td>${m.offset.map(v => (v > 0 ? "+" : "") + v).join(" / ")}</td><td>${m.bonus.join(" / ")}</td><td>${m.raw.map(v => v.toFixed(3)).join(" / ")}</td></tr>`).join("")}</tbody></table>${list.length > cap ? `<p>${list.length}개 중 앞의 ${cap}개만 보여줘요.</p>` : ""}`;
@@ -279,6 +333,7 @@ function showNoData(msg){
   catch(e){ showNoData("pets.json 파일을 불러오지 못했어요. 잠시 뒤에 다시 열어봐 주세요."); return; }
   if(!PETS.length){ showNoData("pets.json 안에 펫이 없어요."); return; }
   PETS.forEach(p => byId.set(p.id, p));
+  buildRanks();
   const hash = decodeURIComponent((location.hash || "").slice(1));
   const first = byId.get(hash) || PETS.find(p => p.variant === "일반") || PETS[0];
   selectPet(first.id, true);
