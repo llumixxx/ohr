@@ -1,0 +1,19 @@
+/* OHR 공통 메뉴 - 메뉴를 늘리려면 아래 목록에 한 줄만 더 넣으면 돼요.
+   href  : 이동할 주소 (같은 폴더의 파일명 또는 전체 주소)
+   label : 메뉴 이름
+   match : 이 파일들에서도 이 메뉴가 선택된 것으로 표시 (하위 페이지용, 선택)
+   blank : true 이면 새 탭으로 열기 (선택) */
+const OHR_NAV_ITEMS = [
+  { href: "index.html", label: "환각 계산기" },
+  // 새 메뉴 예시:  { href: "새파일.html", label: "메뉴 이름" },
+  { href: "https://ohrsa.net", label: "공홈", blank: true }
+];
+(function(){
+  const box = document.getElementById("navLinks");
+  if(!box) return;
+  const cur = location.pathname.split("/").pop() || "index.html";
+  box.innerHTML = OHR_NAV_ITEMS.map(i => {
+    const on = !i.blank && (i.href === cur || (i.match && i.match.indexOf(cur) !== -1));
+    return `<a href="${i.href}"${i.blank ? ' target="_blank" rel="noopener"' : ""}${on ? ' class="on" aria-current="page"' : ""}>${i.label}${i.blank ? " ↗" : ""}</a>`;
+  }).join("");
+})();
