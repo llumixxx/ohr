@@ -9,7 +9,9 @@
 
   /* ── 공홈 카드 읽기 ── */
   const KEYS = { "공":"atk", "방":"def", "순":"agi", "내":"hp", "크리":"crit", "회피":"evas", "명중":"acc", "관통":"pen", "\uc274\ub4dc":"shld" };
-  function range(txt) {                                  // "+46~69" → [46,69], "-25~30" → [-25,30], "-" → null
+  /* 공홈은 페널티 범위를 "-15~24"처럼 적어요. 뒤 숫자도 마이너스(-15~-24)라는 뜻이라 부호를 맞춰줘요 */
+  const fixRaw = (t) => String(t).replace(/^(-\d+(?:\.\d+)?)~(\d+(?:\.\d+)?)/, "$1~-$2");
+  function range(txt) {                                  // "+46~69" → [46,69], "-15~24" → [-24,-15], "-" → null
     const t = (txt || "").replace(/[가-힣]/g, "").replace(/[+%\s]/g, "");
     if (!t || t === "-") return null;
     const m = t.match(/(-?\d+(?:\.\d+)?)(?:~(-?\d+(?:\.\d+)?))?/);
@@ -29,8 +31,9 @@
         const label = th.textContent.trim(), raw = td.textContent.replace(/\s+/g, " ").trim();
         if (label === "속성") { attr = raw === "-" ? "" : raw; return; }
         const k = KEYS[label]; if (!k) return;
-        const r = range(raw);
-        if (r) { s[k] = raw.replace(/^[가-힣]+/, ""); n[k] = r; }
+        const fixed = fixRaw(raw.replace(/^[가-힣]+/, ""));
+        const r = range(fixed);
+        if (r) { s[k] = fixed; n[k] = r; }
       });
       const item = {
         id: String(d.wrId || ""), name: d.name || text(".item_name_title"),
