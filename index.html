@@ -24,7 +24,6 @@
         <div class="frame"><div class="frame-in"><span id="hImg" style="display:contents"></span></div></div>
         <div class="pc-info">
           <h1 class="pname" id="hName">불러오는 중…</h1>
-          <div class="vtabs" id="vTabs" role="tablist" aria-label="펫 형태"></div>
           <div class="tags" id="hTags"></div>
           <div class="attrs" id="hAttrs"></div>
         </div>
@@ -40,16 +39,17 @@
 
     <section class="calc box" id="calcPanel">
       <div class="box-h"><span class="ico">✨</span><h2>환각 계산</h2></div>
-      <p class="lead">펫을 얻었을 때(레벨 1) 정보창에 보이는 초기치를 넣으면 바로 계산돼요.</p>
+      <p class="lead">펫을 얻었을 때(레벨 1) 정보창에 보이는 초기치를 넣고 계산하기를 눌러주세요.</p>
       <div class="stat-grid" id="statGrid"></div>
       <div class="calc-row">
+        <button class="btn" id="calcBtn" type="button">계산하기</button>
         <button class="btn ghost" id="resetBtn" type="button">S급 초기치로 되돌리기</button>
       </div>
       <div class="xmods" id="xmods"></div>
     </section>
 
     <section class="resbox box" id="resultPanel">
-      <div class="box-h"><span class="ico b">📊</span><h2>결과</h2></div>
+      <div class="box-h"><span class="ico b">📊</span><h2>결과</h2><span class="stale-note" id="staleNote" hidden>값이 바뀌었어요 · 계산하기를 눌러주세요</span></div>
       <div id="results"><div class="empty">펫 정보를 불러오는 중이에요…</div></div>
     </section>
   </div>

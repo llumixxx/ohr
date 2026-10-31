@@ -137,7 +137,7 @@ function openModal(id, fromHash){
       <div class="m-total"><span>S급 총성장률 (공격+방어+순발)</span><b>${f3(total(p))}</b></div></div>
     <div class="m-sec"><h3>초기치 <small>S급 Lv.1</small></h3><div class="m-grid">${box("h", "내구", it[0])}${box("a", "공격", it[1])}${box("d", "방어", it[2])}${box("s", "순발", it[3])}</div></div>
     ${sibs.length ? `<div class="m-sec"><h3>같은 이름의 다른 형태</h3><div class="chips">${sibs.map(x => `<button type="button" class="chip" data-open="${esc(x.id)}">${esc(x.variant)}</button>`).join("")}</div></div>` : ""}
-    <div class="m-actions"><a class="btn" href="index.html#${encodeURIComponent(p.id)}">이 펫으로 환각 계산하기</a><button type="button" class="btn ghost" id="mFav" aria-pressed="${fav}">${fav ? "♥ 즐겨찾기 해제" : "♡ 즐겨찾기"}</button></div>`;
+    <div class="m-actions">${p.variant === "일반" ? `<a class="btn" href="index.html#${encodeURIComponent(p.id)}">이 펫으로 환각 계산하기</a>` : ""}<button type="button" class="btn ghost" id="mFav" aria-pressed="${fav}">${fav ? "♥ 즐겨찾기 해제" : "♡ 즐겨찾기"}</button></div>`;
   $("modal").hidden = false;
   document.body.style.overflow = "hidden";
   if(!fromHash){ try{ history.replaceState(null, "", "#" + encodeURIComponent(p.id)); }catch(e){} }

@@ -83,7 +83,6 @@ const bar = (v, i) => `<span class="mb"><i style="width:${Math.max(3, Math.min(1
 const rankOf = (v, i) => 1 + RANKTAB[i].filter(x => x > v + 1e-9).length;
 
 /* ===== 선택한 펫 ===== */
-const VARIANT_ORDER = ["일반","환생","진화","환생·진화"];
 function setSprite(p){
   const holder = $("hImg"); holder.innerHTML = "";
   if(!p.img) return;
@@ -95,8 +94,6 @@ function setSprite(p){
 }
 function renderHero(p){
   $("hName").textContent = p.name;
-  const sibs = PETS.filter(x => x.group === p.group).sort((a, b) => VARIANT_ORDER.indexOf(a.variant) - VARIANT_ORDER.indexOf(b.variant));
-  $("vTabs").innerHTML = sibs.length < 2 ? "" : sibs.map(x => `<button type="button" class="vtab" role="tab" data-id="${esc(x.id)}" aria-selected="${x.id === p.id}">${esc(x.variant)}</button>`).join("");
   $("hTags").innerHTML = (p.rideable ? '<span class="tag ride">탑승 가능</span>' : "") + (p.approx ? '<span class="tag">추정 데이터</span>' : "") + (!p.ok ? '<span class="tag">계산 미지원</span>' : "");
   $("hHow").textContent = p.detail ? "획득 방법: " + p.detail : "";
   $("hAttrs").innerHTML = p.attrs.map(([n, v]) => `<div class="attr-row"><span style="color:${ATTR_COLOR[n] || "var(--acc)"}">${esc(n)}</span><div class="track"><i style="width:${Number(v)*10}%;background:${ATTR_COLOR[n] || "var(--acc)"}"></i></div><span class="v">${esc(v)}/10</span></div>`).join("");
@@ -149,6 +146,7 @@ function renderStats(p){
       <div class="stp" role="group" aria-labelledby="sl-${i}"><button type="button" class="sb" data-i="${i}" data-d="-1" aria-label="${lbl} 줄이기">−</button>
       <input class="si" type="number" inputmode="numeric" min="0" id="stat-${i}" value="${state.stat[i]}" ${p.ok ? "" : "disabled"}>
       <button type="button" class="sb" data-i="${i}" data-d="1" aria-label="${lbl} 늘리기">+</button></div></div>`).join("");
+  $("calcBtn").disabled = !p.ok;
   updateExtras();
 }
 /* ===== 입력값과 S급의 차이 표시 ===== */
@@ -160,19 +158,40 @@ function updateExtras(){
     el.className = "df " + (d === 0 ? "eq" : d > 0 ? "up" : "dn");
     el.textContent = d === 0 ? "0" : (d > 0 ? "+" : "−") + Math.abs(d);
   });
+  updateStale();
 }
-let calcTimer = null, calcLast = 0;
-function scheduleCalc(){
-  if(calcTimer) return;
-  const wait = Math.max(0, 90 - (performance.now() - calcLast));
-  calcTimer = setTimeout(() => { calcTimer = null; calcLast = performance.now(); runCalc(); }, wait);
+function updateStale(){
+  const box = $("results"), note = $("staleNote");
+  const stale = !!state.calcStat && state.calcStat.join() !== state.stat.join();
+  if(box) box.classList.toggle("stale", stale);
+  if(note) note.hidden = !stale;
+}
+function showPlaceholder(){
+  const box = $("results"); if(!box) return;
+  box.classList.remove("shake", "stale");
+  box.innerHTML = '<div class="empty ph"><div class="ph-ico">🧮</div>초기치를 확인하고<br><b>계산하기</b>를 눌러주세요</div>';
+}
+/* 계산하기를 눌렀을 때만 결과, 최근 계산, +- 미리보기를 만들어요 */
+function calcNow(){
+  const p = state.sel; if(!p) return;
+  state.calcStat = state.stat.slice();
+  runCalc();
+  if(!p.ok) return;
+  const c = state.res;
+  if(c && c.total){
+    const r = quick(p, state.stat);
+    const e = { id:p.id, name:p.name, stat:state.stat.slice(), top:r.top, eight:+r.eight.toFixed(2) };
+    saveHist([e, ...loadHist().filter(x => !(x.id === e.id && x.stat.join() === e.stat.join()))]);
+  }
+  updateStale();
+  runWhatIf();
+  renderMods();
 }
 const bumpEl = el => { el.classList.remove("bump"); void el.offsetWidth; el.classList.add("bump"); };
 function bumpStat(i, d){
   state.stat[i] = Math.max(0, state.stat[i] + d);
   const el = $("stat-" + i); if(el){ el.value = state.stat[i]; bumpEl(el); }
   updateExtras();
-  scheduleCalc();
 }
 let holdT = null, holdIv = null;
 function stopHold(){ clearTimeout(holdT); clearInterval(holdIv); }
@@ -192,18 +211,15 @@ function bindStats(){
     const inp = e.target.closest(".si"); if(!inp) return;
     const i = Number(inp.id.replace("stat-", ""));
     const v = Math.max(0, Math.round(Number(inp.value) || 0));
-    state.stat[i] = v; inp.value = v; updateExtras(); scheduleCalc();
+    state.stat[i] = v; inp.value = v; updateExtras();
   });
+  grid.addEventListener("keydown", e => { if(e.key === "Enter" && e.target.classList.contains("si")){ e.preventDefault(); e.target.blur(); calcNow(); } });
+  $("calcBtn").addEventListener("click", () => { OHR.haptic(16); calcNow(); });
   $("resetBtn").addEventListener("click", () => {
     const p = state.sel; if(!p) return;
     state.stat = p.initS.slice();
-    state.stat.forEach((v, i) => { const el = $("stat-" + i); if(el) el.value = v; });
+    state.stat.forEach((v, i) => { const el = $("stat-" + i); if(el){ el.value = v; bumpEl(el); } });
     updateExtras();
-    runCalc();
-  });
-  $("vTabs").addEventListener("click", e => {
-    const b = e.target.closest(".vtab"); if(!b) return;
-    selectPet(b.dataset.id);
   });
 }
 
@@ -242,7 +258,6 @@ function renderResults(p, c){
   if(c.total === 0){
     const same = state.stat.every((v, i) => v === p.initS[i]);
     box.classList.remove("shake"); void box.offsetWidth; box.classList.add("shake");
-    queueMods();
     box.innerHTML = `<div class="empty">${same ? "참고 초기치와 맞는 조합을 찾지 못했어요. 참고 초기치는 실제 개체와 다를 수 있으니 레벨 1 실제 수치를 넣어주세요." : `입력한 초기치(${state.stat.join(" / ")})와 맞는 조합을 찾지 못했어요. 레벨 1 수치를 확인해 주세요.`}</div>`;
     return;
   }
@@ -280,7 +295,6 @@ function renderResults(p, c){
   const nums = box.querySelectorAll(".res-v strong");
   OHR.countUp(nums[0], top, 0, 220);
   OHR.countUp(nums[1], eight, 2, 300);
-  queueMods();
   const fillCombos = () => {
     const g = Number($("gradeSel").value), list = c.matches[g] || [], cap = 200;
     $("comboTbl").innerHTML = `<table class="t"><thead><tr><th>등급 보정(내/공/방/순)</th><th>보너스 분배</th><th>계산값(내림 전)</th></tr></thead><tbody>${list.slice(0, cap).map(m => `<tr><td>${m.offset.map(v => (v > 0 ? "+" : "") + v).join(" / ")}</td><td>${m.bonus.join(" / ")}</td><td>${m.raw.map(v => v.toFixed(3)).join(" / ")}</td></tr>`).join("")}</tbody></table>${list.length > cap ? `<p>${list.length}개 중 앞의 ${cap}개만 보여줘요.</p>` : ""}`;
@@ -300,19 +314,7 @@ function quick(p, stat){
   const top = GRADES.find(g => c.counts[g]);
   return { total:c.total, top, eight: c.total ? (c.counts[8] || 0)/c.total*100 : 0 };
 }
-let modTimer = null, wiToken = 0, wiData = null;
-function queueMods(){
-  clearTimeout(modTimer);
-  modTimer = setTimeout(() => {
-    const p = state.sel, c = state.res;
-    if(p && c && c.total && state.stat.some((v, i) => v !== p.initS[i])){
-      const r = quick(p, state.stat);
-      const e = { id:p.id, name:p.name, stat:state.stat.slice(), top:r.top, eight:+r.eight.toFixed(2) };
-      saveHist([e, ...loadHist().filter(x => !(x.id === e.id && x.stat.join() === e.stat.join()))]);
-    }
-    runWhatIf();
-  }, 350);
-}
+let wiToken = 0, wiData = null;
 function runWhatIf(){
   const p = state.sel; if(!p || !p.ok){ wiData = null; renderMods(); return; }
   const token = ++wiToken, base = state.stat.slice(), jobs = [];
@@ -335,11 +337,11 @@ function renderMods(){
     const h = loadHist();
     html += `<div class="xm"><div class="xm-h"><b>최근 계산</b>${h.length ? '<button type="button" class="lnk" id="histClear">지우기</button>' : ""}</div>` + (h.length
       ? `<div class="hist">${h.slice(0, 4).map((e, i) => `<button type="button" class="hrow" data-i="${i}"><span class="hn">${esc(e.name)}</span><span class="hs">${e.stat.join(" · ")}</span><span class="hr">${e.top}등급 · ${e.eight.toFixed(1)}%</span></button>`).join("")}</div>`
-      : '<p class="xm-empty">값을 바꿔서 계산하면 여기에 쌓여요. 누르면 그 값으로 돌아가요.</p>') + "</div>";
+      : '<p class="xm-empty">계산하기를 누를 때마다 여기에 쌓여요. 누르면 그 값으로 다시 계산해요.</p>') + "</div>";
   }
   {
     html += `<div class="xm"><div class="xm-h"><b>+- 미리보기</b><span class="xm-s">+8 확률</span></div>`;
-    if(!wiData){ html += '<p class="xm-empty">계산 중이에요…</p></div>'; }
+    if(!wiData){ html += `<p class="xm-empty">${state.calcStat ? "계산 중이에요…" : "계산하기를 누르면 여기에 보여줘요."}</p></div>`; }
     else {
       const cells = [];
       for(let i = 0; i < 4; i++) for(const d of [-1, 1]) cells.push({ k:i + "|" + d, v:wiData.cells[i + "|" + d] });
@@ -366,7 +368,7 @@ function renderMods(){
     selectPet(e.id);
     state.stat = e.stat.slice();
     state.stat.forEach((v, i) => { const el = $("stat-" + i); if(el){ el.value = v; bumpEl(el); } });
-    updateExtras(); runCalc();
+    updateExtras(); calcNow();
   });
 }
 
@@ -376,9 +378,11 @@ function selectPet(id, fromHash){
   if(!p) return;
   state.sel = p;
   state.stat = p.ok ? p.initS.slice() : [0,0,0,0];
+  state.calcStat = null; state.res = null; wiData = null; wiToken++;
   renderHero(p);
   renderStats(p);
-  runCalc();
+  showPlaceholder();
+  renderMods();
   if(!fromHash){ try{ history.replaceState(null, "", "#" + encodeURIComponent(p.id)); }catch(e){} }
 }
 
@@ -390,13 +394,15 @@ function showNoData(msg){
 
 (async function init(){
   bindPicker(); bindStats();
-  try{ PETS = await OHR.loadPets(); }
+  let ALL = [];
+  try{ ALL = await OHR.loadPets(); PETS = ALL.filter(p => p.variant === "일반"); }
   catch(e){ showNoData("pets.json 파일을 불러오지 못했어요. 잠시 뒤에 다시 열어봐 주세요."); return; }
   if(!PETS.length){ showNoData("pets.json 안에 펫이 없어요."); return; }
   PETS.forEach(p => byId.set(p.id, p));
   buildRanks();
   const hash = decodeURIComponent((location.hash || "").slice(1));
-  const first = byId.get(hash) || PETS.find(p => p.variant === "일반") || PETS[0];
+  const asked = ALL.find(p => p.id === hash);
+  const first = byId.get(hash) || (asked && PETS.find(p => p.group === asked.group)) || PETS[0];
   selectPet(first.id, true);
 })();
 })();
