@@ -182,7 +182,7 @@ function bindStats(){
 }
 
 /* ===== 결과 ===== */
-const gcol = g => `hsl(${Math.round(10 + (g + 8)/16*130)} 62% 46%)`;
+const gcol = g => `hsl(${Math.round((g + 8)/16*150)} 72% 70%)`;
 function fun(eightPct, top){
   if(top < 0) return "등급이 마이너스대예요. 그래도 이 아이만의 매력이 있어요.";
   if(eightPct <= 0){

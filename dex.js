@@ -59,7 +59,7 @@ function tableHTML(rows){
     <td class="nm">${esc(p.name)}<small>${esc(p.detail)}</small></td>
     <td>${p.attrs.map(([n, v]) => `<span style="color:${ATTR_COLOR[n] || "inherit"}">${esc(n)}${esc(v)}</span>`).join(" ")}</td>
     <td>${f3(p.growthS[0])}</td><td>${f3(p.growthS[1])}</td><td>${f3(p.growthS[2])}</td><td>${f3(p.growthS[3])}</td>
-    <td style="color:var(--gold)">${f3(total(p))}</td><td>${p.initS.join(" / ")}</td><td>${p.rideable ? "가능" : "불가"}</td></tr>`).join("")}</tbody></table></div>`;
+    <td style="color:var(--rose)">${f3(total(p))}</td><td>${p.initS.join(" / ")}</td><td>${p.rideable ? "가능" : "불가"}</td></tr>`).join("")}</tbody></table></div>`;
 }
 
 function render(){
@@ -130,7 +130,7 @@ function openModal(id, fromHash){
   $("mBody").innerHTML = `
     <div class="m-top"><div class="m-img">${p.img ? `<img src="${esc(p.img)}" alt="" referrerpolicy="no-referrer">` : ""}</div>
       <div><div class="m-name" id="mName">${esc(p.name)}</div>
-      <div class="tags" style="margin-top:8px">${p.rideable ? '<span class="tag ride">탑승 가능</span>' : '<span class="tag" style="background:#3a2a20;color:var(--ink3)">탑승 불가</span>'}${p.approx ? '<span class="tag">추정</span>' : ""}</div></div></div>
+      <div class="tags" style="margin-top:8px">${p.rideable ? '<span class="tag ride">탑승 가능</span>' : '<span class="tag off">탑승 불가</span>'}${p.approx ? '<span class="tag">추정</span>' : ""}</div></div></div>
     <div class="m-sec"><h3>속성</h3><div class="attrs">${p.attrs.map(([n, v]) => `<div class="attr-row"><span style="color:${ATTR_COLOR[n] || "var(--acc)"}">${esc(n)}</span><div class="track"><i style="width:${Number(v)*10}%;background:${ATTR_COLOR[n] || "var(--acc)"}"></i></div><span class="v">${esc(v)}/10</span></div>`).join("")}</div></div>
     <div class="m-sec"><h3>획득 방법</h3><div style="font-size:14px;color:var(--ink2)">${esc(p.detail || "-")}</div></div>
     <div class="m-sec"><h3>성장률 <small>S급 기준</small></h3><div class="m-grid">${box("h", "내구", f3(g[0]))}${box("a", "공격", f3(g[1]))}${box("d", "방어", f3(g[2]))}${box("s", "순발", f3(g[3]))}</div>
