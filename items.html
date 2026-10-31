@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>OHR Mate - 아이템 도감</title>
+<meta name="description" content="오르서버 아이템의 능력치, 획득 방법, 설명을 한눈에 보는 도감">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Jua&family=Noto+Sans+KR:wght@400;500;700;900&display=swap" rel="stylesheet">
+<link rel="preload" href="items.json" as="fetch" crossorigin>
+<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="items.css">
+</head>
+<body>
+<div id="siteNav"></div>
+
+<main class="shell">
+  <div class="page-head">
+    <h1 class="page-title">아이템 도감</h1>
+    <p class="page-sub">공홈 아이템 정보를 바탕으로 능력치와 획득 방법을 보여줘요</p>
+  </div>
+  <button class="btn ghost filter-toggle" id="filterToggle" type="button" aria-expanded="false">검색·필터 열기</button>
+  <div class="dex-layout">
+    <aside class="filters box" id="filters">
+      <div class="f-title">검색</div>
+      <input id="search" class="f-input" type="search" placeholder="이름 / 획득처 / 설명 (초성 가능)" autocomplete="off" aria-label="아이템 검색">
+      <div class="f-title">분류</div>
+      <div class="chips" id="catChips"></div>
+      <div class="f-title">정렬 <small>수치가 큰 순서</small></div>
+      <select id="sortSel" class="f-input" aria-label="정렬">
+        <option value="default">기본정렬 (최신순)</option>
+        <option value="atk">공격 높은순</option>
+        <option value="def">방어 높은순</option>
+        <option value="agi">순발 높은순</option>
+        <option value="hp">내구 높은순</option>
+        <option value="name">이름순</option>
+      </select>
+      <div class="f-title">보기 방식</div>
+      <div class="f-seg" id="viewSeg"></div>
+    </aside>
+
+    <section class="dex-main">
+      <div class="stats-row">
+        <span class="pill"><b id="statTotal">-</b>전체 아이템</span>
+        <span class="pill"><b id="statShown">-</b>표시중</span>
+      </div>
+      <div id="grid"></div>
+      <div class="empty" id="empty" hidden>검색 결과가 없어요.</div>
+      <button class="btn ghost" id="loadmore" type="button" hidden>더 보기</button>
+    </section>
+  </div>
+</main>
+
+<div class="modal" id="modal" hidden>
+  <div class="mcard" role="dialog" aria-modal="true" aria-labelledby="mName">
+    <button class="mclose" id="mClose" type="button" aria-label="닫기">✕</button>
+    <div id="mBody"></div>
+  </div>
+</div>
+<script src="nav.js"></script>
+<script src="common.js"></script>
+<script src="items.js"></script>
+</body>
+</html>
