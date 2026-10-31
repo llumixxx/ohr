@@ -9,7 +9,7 @@
 </style></head><body>
 <h1>OHR 데이터 갱신기</h1>
 <p>공홈이 프로그램 접근을 막아서, 공홈을 연 <b>브라우저</b>가 대신 목록을 읽어서 깃허브에 올리는 방식이에요.
-계산기 사이트는 깃허브에 올라간 <code>pets.json</code>을 알아서 가져가요.</p>
+계산기 사이트는 깃허브에 올라간 <code>pets.json</code>과 <code>items.json</code>을 알아서 가져가요.</p>
 
 <div class="box"><b>1. 처음 한 번만</b>
 <ol>
@@ -23,12 +23,12 @@
 
 <div class="box"><b>2. 갱신할 때마다</b>
 <ol>
- <li>공홈에 로그인하고 <a href="https://ohrsa.net/petinfo" target="_blank" style="color:#2dd4bf">페트정보 페이지</a> 열기</li>
- <li>즐겨찾기의 <b>OHR 갱신</b> 누르기 (오른쪽 위에 창이 떠요)</li>
+ <li>공홈에 로그인하고 갱신할 페이지 열기: 펫은 <a href="https://ohrsa.net/petinfo" target="_blank" style="color:#2dd4bf">페트정보 페이지</a>, 아이템은 <a href="https://ohrsa.net/item" target="_blank" style="color:#2dd4bf">아이템 페이지</a></li>
+ <li>즐겨찾기의 <b>OHR 갱신</b> 누르기 (오른쪽 위에 창이 떠요. 열린 페이지에 맞는 창이 떠요)</li>
  <li>처음이면 토큰을 붙여넣기 (그 브라우저에 저장돼서 다음부턴 안 물어봐요)</li>
- <li>먼저 <b>확인만</b>을 눌러서 펫 수가 맞는지 보고, 괜찮으면 <b>갱신 시작</b></li>
+ <li>먼저 <b>확인만</b>을 눌러서 개수가 맞는지 보고, 괜찮으면 <b>갱신 시작</b></li>
 </ol>
-<p>· 공홈에는 천천히 요청해요 (페이지마다 0.7초 쉬어요)<br>· 처음에는 펫 이미지를 같이 저장하느라 몇 분 걸려요<br>· 바뀔 게 있을 때만 깃허브에 저장해요</p></div>
+<p>· 공홈에는 천천히 요청해요 (페이지마다 0.7초 쉬어요)<br>· 처음에는 이미지를 같이 저장하느라 몇 분 걸려요<br>· 바뀔 게 있을 때만 깃허브에 저장해요</p></div>
 
 <script>
  document.getElementById('bm').onclick = function(e){ e.preventDefault(); alert('클릭하지 말고 즐겨찾기 바로 끌어다 놓아주세요!'); };
