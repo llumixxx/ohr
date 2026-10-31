@@ -8,7 +8,7 @@ const saveFav = () => { try{ localStorage.setItem(FAVK, JSON.stringify([...FAV])
 const S = { q:"", cat:"ALL", sort:"default", view:"card", shown:PAGE };
 let ITEMS = [], byId = new Map(), list = [];
 
-const LABELS = [["atk", "공"], ["def", "방"], ["agi", "순"], ["hp", "내"], ["crit", "크리"], ["evas", "회피"], ["acc", "명중"], ["pen", "관통"], ["shld", "쉘드"]];
+const LABELS = [["atk", "공"], ["def", "방"], ["agi", "순"], ["hp", "내"], ["crit", "크리"], ["evas", "회피"], ["acc", "명중"], ["pen", "관통"], ["shld", "\uc274\ub4dc"]];
 const CAT_ORDER = ["초보자", "무기", "방어구", "장신구", "토템", "보조", "소모", "캐릭터", "기타"];
 const maxOf = (it, k) => it.n[k] ? it.n[k][1] : -Infinity;
 
@@ -52,7 +52,7 @@ function cardHTML(it){
 }
 const cell = (it, k) => it.s[k] ? esc(it.s[k]) : "-";
 function tableHTML(rows){
-  return `<div class="dex-wrap"><table class="dex-table"><thead><tr><th>이름</th><th>분류</th><th>공</th><th>방</th><th>순</th><th>내</th><th>크리</th><th>회피</th><th>명중</th><th>관통</th><th>쉘드</th></tr></thead><tbody>${rows.map(it => `<tr class="row" data-id="${esc(it.id)}">
+  return `<div class="dex-wrap"><table class="dex-table"><thead><tr><th>이름</th><th>분류</th><th>공</th><th>방</th><th>순</th><th>내</th><th>크리</th><th>회피</th><th>명중</th><th>관통</th><th>\uc274\ub4dc</th></tr></thead><tbody>${rows.map(it => `<tr class="row" data-id="${esc(it.id)}">
     <td class="nm">${esc(it.name)}<small>${esc(it.obtain)}</small></td><td>${esc(it.cat)}</td>
     <td>${cell(it, "atk")}</td><td>${cell(it, "def")}</td><td>${cell(it, "agi")}</td><td>${cell(it, "hp")}</td>
     <td>${cell(it, "crit")}</td><td>${cell(it, "evas")}</td><td>${cell(it, "acc")}</td><td>${cell(it, "pen")}</td><td>${cell(it, "shld")}</td></tr>`).join("")}</tbody></table></div>`;
@@ -84,7 +84,7 @@ function openModal(id, fromHash){
       <div><div class="m-name" id="mName">${esc(it.name)}</div><div class="tags" style="margin-top:8px"><span class="tag">${esc(it.cat)}</span>${it.attr ? `<span class="tag">속성 ${esc(it.attr)}</span>` : ""}</div></div></div>
     <div class="m-sec"><h3>능력치 <small>범위가 있으면 최소~최대</small></h3>
       <div class="m-grid">${box("a", "공격", "atk")}${box("d", "방어", "def")}${box("s", "순발", "agi")}${box("h", "내구", "hp")}</div>
-      <div class="m-grid five" style="margin-top:8px">${box("", "크리", "crit")}${box("", "회피", "evas")}${box("", "명중", "acc")}${box("", "관통", "pen")}${box("", "쉘드", "shld")}</div></div>
+      <div class="m-grid five" style="margin-top:8px">${box("", "크리", "crit")}${box("", "회피", "evas")}${box("", "명중", "acc")}${box("", "관통", "pen")}${box("", "\uc274\ub4dc", "shld")}</div></div>
     <div class="m-sec"><h3>획득 방법</h3><div style="font-size:14px;color:var(--ink2)">${esc(it.obtain || "-")}</div></div>
     ${it.desc && it.desc !== "." ? `<div class="m-sec"><h3>설명</h3><div style="font-size:14px;color:var(--ink2);white-space:pre-wrap">${esc(it.desc)}</div></div>` : ""}
     <div class="m-actions"><button type="button" class="btn ghost" id="mFav" aria-pressed="${fav}">${fav ? "♥ 즐겨찾기 해제" : "♡ 즐겨찾기"}</button></div>`;
