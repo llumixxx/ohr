@@ -20,11 +20,15 @@
         <input id="pick" type="search" placeholder="펫 이름 또는 초성으로 검색" autocomplete="off" aria-label="펫 검색">
         <div class="suggest" id="suggest" role="listbox" hidden></div>
       </div>
-      <div class="frame"><div class="frame-in"><span id="hImg" style="display:contents"></span></div></div>
-      <h1 class="pname" id="hName">불러오는 중…</h1>
-      <div class="vtabs" id="vTabs" role="tablist" aria-label="펫 형태"></div>
-      <div class="tags" id="hTags"></div>
-      <div class="attrs" id="hAttrs"></div>
+      <div class="pc-head">
+        <div class="frame"><div class="frame-in"><span id="hImg" style="display:contents"></span></div></div>
+        <div class="pc-info">
+          <h1 class="pname" id="hName">불러오는 중…</h1>
+          <div class="vtabs" id="vTabs" role="tablist" aria-label="펫 형태"></div>
+          <div class="tags" id="hTags"></div>
+          <div class="attrs" id="hAttrs"></div>
+        </div>
+      </div>
       <table class="stat-table">
         <thead><tr><th></th><th>성장률</th><th>S급 초기치</th></tr></thead>
         <tbody id="hStats"></tbody>
@@ -41,7 +45,11 @@
         <button class="btn" id="calcBtn" type="button">등급 계산</button>
         <button class="btn ghost" id="resetBtn" type="button">S급 초기치로 되돌리기</button>
       </div>
-      <div id="results"></div>
+    </section>
+
+    <section class="resbox box" id="resultPanel">
+      <div class="box-h"><h2>결과</h2></div>
+      <div id="results"><div class="empty">펫 정보를 불러오는 중이에요…</div></div>
     </section>
   </div>
 
