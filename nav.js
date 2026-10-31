@@ -19,5 +19,5 @@ const OHR_NAV_ITEMS = [
     return `<a href="${i.href}"${i.blank ? ' target="_blank" rel="noopener"' : ""}${on ? ' class="on" aria-current="page"' : ""}>${i.label}${i.blank ? " ↗" : ""}</a>`;
   }).join("");
   box.className = "top";
-  box.innerHTML = `<div class="top-in"><a class="brand" href="index.html">OHR<small>펫 계산기</small></a><nav class="menu" aria-label="메뉴">${links}</nav></div>`;
+  box.innerHTML = `<div class="top-in"><a class="brand" href="index.html">OHR Mate<small>- made by 해적 부족 반기노</small></a><nav class="menu" aria-label="메뉴">${links}</nav></div>`;
 })();

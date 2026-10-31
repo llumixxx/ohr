@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>OHR 환각 계산기</title>
+<title>OHR Mate - 환각 계산기</title>
 <meta name="description" content="오르서버 펫의 레벨 1 초기치로 가능한 등급과 +8 환각 확률을 계산해요">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Jua&family=Noto+Sans+KR:wght@400;500;700;900&display=swap" rel="stylesheet">
@@ -30,33 +30,33 @@
         </div>
       </div>
       <table class="stat-table">
-        <thead><tr><th></th><th>성장률</th><th>S급 초기치</th></tr></thead>
+        <thead><tr><th></th><th>성장률</th><th>순위</th><th>S급 초기치</th></tr></thead>
         <tbody id="hStats"></tbody>
       </table>
+      <p class="fine" id="hRankNote"></p>
       <p class="hero-how" id="hHow"></p>
       <a class="btn ghost" id="dexLink" href="pokedex.html">도감에서 자세히 보기</a>
     </aside>
 
     <section class="calc box" id="calcPanel">
-      <div class="box-h"><h2>환각 계산</h2></div>
+      <div class="box-h"><span class="ico">✨</span><h2>환각 계산</h2></div>
       <p class="lead">펫을 얻었을 때(레벨 1) 정보창에 보이는 초기치를 그대로 넣어주세요.</p>
       <div class="stat-grid" id="statGrid"></div>
       <div class="calc-row">
         <button class="btn" id="calcBtn" type="button">등급 계산</button>
         <button class="btn ghost" id="resetBtn" type="button">S급 초기치로 되돌리기</button>
       </div>
+      <div class="radar-wrap">
+        <div class="radar-h"><b>초기치 모양</b><span class="legend"><i class="lg-in"></i>입력 <i class="lg-s"></i>S급</span></div>
+        <div id="radar"></div>
+      </div>
     </section>
 
     <section class="resbox box" id="resultPanel">
-      <div class="box-h"><h2>결과</h2></div>
+      <div class="box-h"><span class="ico b">📊</span><h2>결과</h2></div>
       <div id="results"><div class="empty">펫 정보를 불러오는 중이에요…</div></div>
     </section>
   </div>
-
-  <p class="foot">
-    레벨 1 초기치에서 가능한 등급 보정(−2~+2)과 보너스 분배 10포인트의 모든 경우(178,750가지)를 대조해서 등급 확률을 구해요. 확률은 가능한 조합을 모두 같은 비율로 보고 계산해요.
-    서버 소스를 직접 볼 수 없어서 계산에 쓰는 원본계수는 표기 성장률로 거꾸로 맞춘 값이고, 실제와 다를 수 있어요. 오르 공식 사이트와는 관계없는 팬 도구예요.
-  </p>
 </main>
 <script src="nav.js"></script>
 <script src="common.js"></script>
