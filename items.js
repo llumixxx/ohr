@@ -11,6 +11,11 @@ let ITEMS = [], byId = new Map(), list = [];
 const LABELS = [["atk", "공"], ["def", "방"], ["agi", "순"], ["hp", "내"], ["crit", "크리"], ["evas", "회피"], ["acc", "명중"], ["pen", "관통"], ["shld", "\uc274\ub4dc"]];
 const CAT_ORDER = ["초보자", "무기", "방어구", "장신구", "토템", "보조", "소모", "캐릭터", "기타"];
 const maxOf = (it, k) => it.n[k] ? it.n[k][1] : -Infinity;
+/* 합능 = 공 + 방 + 순 + 내구÷3 (쟈쟈 아이템 도감과 같은 식, 범위가 있으면 큰 쪽 수치) */
+const hasBase = it => ["atk", "def", "agi", "hp"].some(k => it.n[k]);
+const totalOf = it => ["atk", "def", "agi"].reduce((a, k) => a + (it.n[k] ? it.n[k][1] : 0), 0) + (it.n.hp ? it.n.hp[1] : 0)/3;
+const fmtTotal = v => { const r = Math.round(v*100)/100; return (r > 0 ? "+" : "") + r; };
+const tcls = v => v > 0 ? "tpos" : v < 0 ? "tneg" : "tzero";
 
 function norm(r){
   if(!r || !r.name) return null;
@@ -30,6 +35,7 @@ function sorted(arr){
   if(S.sort === "default") return arr;
   const a = [...arr];
   if(S.sort === "name") return a.sort((x, y) => x.name.localeCompare(y.name, "ko"));
+  if(S.sort === "total") return a.sort((x, y) => (hasBase(y) ? totalOf(y) : -Infinity) - (hasBase(x) ? totalOf(x) : -Infinity));
   return a.sort((x, y) => maxOf(y, S.sort) - maxOf(x, S.sort));
 }
 /* ===== 카드와 표 ===== */
@@ -47,14 +53,15 @@ function cardHTML(it){
     <div class="pc-how" title="${esc(it.obtain)}">${esc(it.obtain || "-")}</div>
     <div class="ic-stats">${pills(it, 6)}</div>
     <div class="ic-desc">${esc(it.desc === "." ? "" : it.desc)}</div>
-    <div class="pc-foot"><span class="badge">${esc(it.cat)}</span><span></span></div>
+    <div class="pc-foot"><span class="badge">${esc(it.cat)}</span>${hasBase(it) ? `<span class="ic-total"><i>합계</i><b class="${tcls(totalOf(it))}">${fmtTotal(totalOf(it))}</b></span>` : "<span></span>"}</div>
   </div>`;
 }
 const cell = (it, k) => it.s[k] ? esc(it.s[k]) : "-";
 function tableHTML(rows){
-  return `<div class="dex-wrap"><table class="dex-table"><thead><tr><th>이름</th><th>분류</th><th>공</th><th>방</th><th>순</th><th>내</th><th>크리</th><th>회피</th><th>명중</th><th>관통</th><th>\uc274\ub4dc</th></tr></thead><tbody>${rows.map(it => `<tr class="row" data-id="${esc(it.id)}">
+  return `<div class="dex-wrap"><table class="dex-table"><thead><tr><th>이름</th><th>분류</th><th>공</th><th>방</th><th>순</th><th>내</th><th>합계</th><th>크리</th><th>회피</th><th>명중</th><th>관통</th><th>\uc274\ub4dc</th></tr></thead><tbody>${rows.map(it => `<tr class="row" data-id="${esc(it.id)}">
     <td class="nm">${esc(it.name)}<small>${esc(it.obtain)}</small></td><td>${esc(it.cat)}</td>
     <td>${cell(it, "atk")}</td><td>${cell(it, "def")}</td><td>${cell(it, "agi")}</td><td>${cell(it, "hp")}</td>
+    <td class="${hasBase(it) ? tcls(totalOf(it)) : "tzero"}">${hasBase(it) ? fmtTotal(totalOf(it)) : "-"}</td>
     <td>${cell(it, "crit")}</td><td>${cell(it, "evas")}</td><td>${cell(it, "acc")}</td><td>${cell(it, "pen")}</td><td>${cell(it, "shld")}</td></tr>`).join("")}</tbody></table></div>`;
 }
 function render(){
@@ -84,7 +91,8 @@ function openModal(id, fromHash){
       <div><div class="m-name" id="mName">${esc(it.name)}</div><div class="tags" style="margin-top:8px"><span class="tag">${esc(it.cat)}</span>${it.attr ? `<span class="tag">속성 ${esc(it.attr)}</span>` : ""}</div></div></div>
     <div class="m-sec"><h3>능력치 <small>범위가 있으면 최소~최대</small></h3>
       <div class="m-grid">${box("a", "공격", "atk")}${box("d", "방어", "def")}${box("s", "순발", "agi")}${box("h", "내구", "hp")}</div>
-      <div class="m-grid five" style="margin-top:8px">${box("", "크리", "crit")}${box("", "회피", "evas")}${box("", "명중", "acc")}${box("", "관통", "pen")}${box("", "\uc274\ub4dc", "shld")}</div></div>
+      <div class="m-grid five" style="margin-top:8px">${box("", "크리", "crit")}${box("", "회피", "evas")}${box("", "명중", "acc")}${box("", "관통", "pen")}${box("", "\uc274\ub4dc", "shld")}</div>
+      ${hasBase(it) ? `<div class="m-total"><span>공방순내 합계 (내÷3)</span><span class="tv ${tcls(totalOf(it))}">${fmtTotal(totalOf(it))}</span></div>` : ""}</div>
     <div class="m-sec"><h3>획득 방법</h3><div style="font-size:14px;color:var(--ink2)">${esc(it.obtain || "-")}</div></div>
     ${it.desc && it.desc !== "." ? `<div class="m-sec"><h3>설명</h3><div style="font-size:14px;color:var(--ink2);white-space:pre-wrap">${esc(it.desc)}</div></div>` : ""}
     <div class="m-actions"><button type="button" class="btn ghost" id="mFav" aria-pressed="${fav}">${fav ? "♥ 즐겨찾기 해제" : "♡ 즐겨찾기"}</button></div>`;
