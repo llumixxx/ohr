@@ -105,29 +105,7 @@ function chosung(str){
 const CLUSTER = { "ㄳ":"ㄱㅅ","ㄵ":"ㄴㅈ","ㄶ":"ㄴㅎ","ㄺ":"ㄹㄱ","ㄻ":"ㄹㅁ","ㄼ":"ㄹㅂ","ㄽ":"ㄹㅅ","ㄾ":"ㄹㅌ","ㄿ":"ㄹㅍ","ㅀ":"ㄹㅎ","ㅄ":"ㅂㅅ" };
 const expandClusters = s => Array.from(s).map(ch => CLUSTER[ch] || ch).join("");
 
-/* ===== 계기판 ===== */
-const GA0 = -135, GA1 = 135;
-function gpt(a, r){ const t = a*Math.PI/180; return [100 + r*Math.sin(t), 100 - r*Math.cos(t)]; }
-function garc(r){ const p0 = gpt(GA0, r), p1 = gpt(GA1, r); return `M${p0[0].toFixed(2)} ${p0[1].toFixed(2)}A${r} ${r} 0 1 1 ${p1[0].toFixed(2)} ${p1[1].toFixed(2)}`; }
-function niceMax(x){
-  if(!(x > 0)) return 1;
-  const e = Math.pow(10, Math.floor(Math.log10(x)));
-  for(const m of [1,1.25,1.5,2,2.5,3,4,5,6,7.5,8,10]){ if(m*e >= x*1.04) return m*e; }
-  return 10*e;
-}
-const tickTxt = (v, max) => max >= 10 ? String(Math.round(v)) : String(+v.toFixed(2));
-function gaugeTicks(max){
-  let s = "";
-  for(let i=0; i<=20; i++){
-    const a = GA0 + (GA1-GA0)*i/20, maj = i % 4 === 0;
-    const p0 = gpt(a, maj ? 84 : 87), p1 = gpt(a, 95);
-    s += `<line class="gtick${maj ? " maj" : ""}" x1="${p0[0].toFixed(1)}" y1="${p0[1].toFixed(1)}" x2="${p1[0].toFixed(1)}" y2="${p1[1].toFixed(1)}"/>`;
-    if(maj){ const tp = gpt(a, 63); s += `<text class="gtxt" x="${tp[0].toFixed(1)}" y="${tp[1].toFixed(1)}">${tickTxt(max*i/20, max)}</text>`; }
-  }
-  return s;
-}
-const GAUGE_SVG = `<svg class="gsvg" viewBox="0 0 200 200" aria-hidden="true"><path class="gtrack" d="${garc(78)}"/><path class="gred" d="${garc(78)}" pathLength="100"/><path class="gfill" d="${garc(78)}" pathLength="100"/><g class="gticks"></g><g class="gneedle"><polygon points="97.5,110 100,28 102.5,110"/></g><circle class="ghub" cx="100" cy="100" r="9"/></svg>`;
-
+/* ===== 성장률 표시창 ===== */
 const tweens = new WeakMap();
 function tweenNum(el, to, ms, fmt){
   const from = Number(el.dataset.val || 0);
@@ -143,49 +121,25 @@ function tweenNum(el, to, ms, fmt){
   };
   requestAnimationFrame(step);
 }
-function ensureGauges(){
+function ensureReadouts(){
   const box = $("hSpecs");
   if(box.firstElementChild) return;
   box.innerHTML = GROW_KEYS.map((k, i) => `
-    <div class="sp ${k}" data-i="${i}">
-      <div class="gwrap">${GAUGE_SVG}<div class="gnum"><span class="gv" data-val="0">0.000</span></div></div>
-      <div class="t">${GROW_LABELS[i]} 성장률</div>
+    <div class="ro ${k}" data-i="${i}" title="막대는 전체 펫 중 가장 높은 값과 비교한 거예요">
+      <span class="rl">${GROW_LABELS[i]} 성장률</span>
+      <div class="lcd"><span class="gv" data-val="0">0.000</span></div>
+      <div class="segs">${"<i></i>".repeat(10)}</div>
     </div>`).join("");
 }
-function updateGauges(p, anim){
-  ensureGauges();
+function updateReadouts(p, anim){
+  ensureReadouts();
   GROW_KEYS.forEach((k, i) => {
-    const card = $("hSpecs").querySelector(`.sp[data-i="${i}"]`);
-    const max = GMAX[i];
-    if(card.dataset.gmax !== String(max)){ card.dataset.gmax = String(max); card.querySelector(".gticks").innerHTML = gaugeTicks(max); }
-    const frac = Math.max(0, Math.min(1, p.growthS[i]/max));
-    card.querySelector(".gneedle").style.transform = `rotate(${GA0 + (GA1-GA0)*frac}deg)`;
-    card.querySelector(".gfill").style.strokeDasharray = `${(frac*100).toFixed(2)} 100`;
-    tweenNum(card.querySelector(".gv"), p.growthS[i], anim ? 800 : 0, f3);
+    const tile = $("hSpecs").querySelector(`.ro[data-i="${i}"]`);
+    const frac = GMAX[i] > 0 ? Math.max(0, Math.min(1, p.growthS[i]/GMAX[i])) : 0;
+    const on = Math.round(frac*10);
+    tile.querySelectorAll(".segs i").forEach((s, j) => s.classList.toggle("on", j < on));
+    tweenNum(tile.querySelector(".gv"), p.growthS[i], anim ? 600 : 0, f3);
   });
-}
-
-/* ===== 회전 전시대 ===== */
-const fx = { spin:0, vel:0, drag:false, lastX:0 };
-function initStage(){
-  const st = $("stage"), pet = $("pet");
-  st.addEventListener("pointerdown", e => { fx.drag = true; fx.lastX = e.clientX; fx.vel = 0; try{ st.setPointerCapture(e.pointerId); }catch(_e){} st.classList.add("grab"); });
-  st.addEventListener("pointermove", e => { if(!fx.drag) return; const dx = e.clientX - fx.lastX; fx.lastX = e.clientX; fx.spin += dx*0.8; fx.vel = dx*0.8; });
-  const end = () => { fx.drag = false; st.classList.remove("grab"); };
-  st.addEventListener("pointerup", end); st.addEventListener("pointercancel", end);
-  if(!smooth()) return;
-  const t0 = performance.now();
-  const frame = now => {
-    const t = (now - t0)/1000;
-    if(!fx.drag){
-      if(Math.abs(fx.vel) > 0.05){ fx.spin += fx.vel; fx.vel *= 0.94; }
-      else { fx.vel = 0; fx.spin += (Math.round(fx.spin/360)*360 - fx.spin)*0.06; }
-    }
-    st.style.setProperty("--ang", (fx.spin + t*7).toFixed(1));
-    pet.style.transform = `perspective(900px) rotateY(${(fx.spin + Math.sin(t*0.8)*16).toFixed(1)}deg)`;
-    requestAnimationFrame(frame);
-  };
-  requestAnimationFrame(frame);
 }
 
 /* ===== 상태 ===== */
@@ -194,7 +148,7 @@ const FAV_KEY = "ohr-calc-favorites";
 function loadFavs(){ try{ state.favs = new Set(JSON.parse(localStorage.getItem(FAV_KEY) || "[]")); }catch(e){ state.favs = new Set(); } }
 function saveFavs(){ try{ localStorage.setItem(FAV_KEY, JSON.stringify([...state.favs])); }catch(e){} }
 
-/* ===== 히어로 ===== */
+/* ===== 선택한 펫 ===== */
 const VARIANT_ORDER = ["일반","환생","진화","환생·진화"];
 const ATTR_COLOR = { "지":"#5E9E52", "수":"#4F8FC0", "화":"#C24E3A", "풍":"#C9A227" };
 function setSprite(p){
@@ -214,7 +168,42 @@ function renderHero(p, anim){
   $("hHow").textContent = p.obtain ? "획득 방법: " + p.obtain : "";
   $("hAttrs").innerHTML = p.attrs.map(([n, v]) => `<div class="attr-row"><span style="color:${ATTR_COLOR[n] || "var(--acc)"}">${esc(n)}</span><div class="track"><i style="width:${Number(v)*10}%;background:${ATTR_COLOR[n] || "var(--acc)"}"></i></div><span class="v">${esc(v)}/10</span></div>`).join("");
   setSprite(p);
-  updateGauges(p, anim);
+  updateReadouts(p, anim);
+}
+
+/* ===== 펫 검색창 (자동완성) ===== */
+function bindPicker(){
+  const inp = $("pick"), box = $("suggest");
+  let act = -1, hits = [];
+  const close = () => { box.hidden = true; act = -1; };
+  const choose = id => { inp.value = ""; close(); selectPet(id); inp.blur(); $("hero").scrollIntoView({ behavior: smooth() ? "smooth" : "auto", block:"start" }); };
+  const render = () => {
+    const q = inp.value.trim();
+    if(!q || !PETS.length){ close(); return; }
+    const exp = expandClusters(q);
+    hits = [];
+    for(const p of PETS){ if(p.name.includes(q) || p._cho.includes(exp)){ hits.push(p); if(hits.length >= 10) break; } }
+    box.hidden = false; act = hits.length ? 0 : -1;
+    box.innerHTML = hits.length
+      ? hits.map((p, i) => `<button type="button" class="sg${i === act ? " act" : ""}" role="option" data-id="${esc(p.id)}"><span>${esc(p.name)}</span><i>${p.attrs.map(a => esc(a[0] + a[1])).join(" ")}</i></button>`).join("")
+      : '<div class="sg-empty">검색 결과가 없어요</div>';
+  };
+  inp.addEventListener("input", render);
+  inp.addEventListener("focus", render);
+  inp.addEventListener("keydown", e => {
+    if(box.hidden) return;
+    if(e.key === "ArrowDown" || e.key === "ArrowUp"){
+      e.preventDefault();
+      if(!hits.length) return;
+      act = (act + (e.key === "ArrowDown" ? 1 : -1) + hits.length) % hits.length;
+      box.querySelectorAll(".sg").forEach((b, i) => b.classList.toggle("act", i === act));
+    } else if(e.key === "Enter"){
+      e.preventDefault();
+      if(hits[act]) choose(hits[act].id);
+    } else if(e.key === "Escape"){ close(); }
+  });
+  box.addEventListener("pointerdown", e => { const b = e.target.closest(".sg"); if(b){ e.preventDefault(); choose(b.dataset.id); } });
+  document.addEventListener("click", e => { if(!e.target.closest(".pick")) close(); });
 }
 
 /* ===== 초기치 입력 ===== */
@@ -297,12 +286,10 @@ function renderResults(p, c){
   if(c.total === 0){
     const same = state.stat.every((v, i) => v === p.initS[i]);
     box.innerHTML = `<div class="empty">${same ? "참고 초기치와 맞는 조합을 찾지 못했어요. 참고 초기치는 실제 개체와 다를 수 있으니 레벨 1 실제 수치를 넣어주세요." : `입력한 초기치(${state.stat.join(" / ")})와 맞는 조합을 찾지 못했어요. 레벨 1 수치를 확인해 주세요.`}</div>`;
-    $("ghost").textContent = "";
     return;
   }
   const top = GRADES.find(g => c.counts[g]);
   const eight = (c.counts[8] || 0)/c.total*100;
-  $("ghost").textContent = top;
   const rows = GRADES.filter(g => c.counts[g]).map(g => {
     const pc = c.counts[g]/c.total*100;
     return `<div class="drow${g === top ? " top" : ""}"><span class="gl">${g}등급</span><div class="gt"><div class="gf" style="width:${pc.toFixed(2)}%;background:${gcol(g)}"></div></div><span class="gp">${pc.toFixed(1)}%</span></div>`;
@@ -315,8 +302,8 @@ function renderResults(p, c){
   }).join("");
   box.innerHTML = `
     <div class="res-hero">
-      <div class="big-card"><span>최고 가능 등급</span><strong>${top}<small>등급</small></strong></div>
-      <div class="big-card prob"><span>+8 환각 확률</span><strong>${eight.toFixed(2)}<small>%</small></strong></div>
+      <div class="big-card"><span>최고 가능 등급</span><div class="lcd lcd-big"><strong>${top}</strong><small>등급</small></div></div>
+      <div class="big-card prob"><span>+8 환각 확률</span><div class="lcd lcd-big"><strong>${eight.toFixed(2)}</strong><small>%</small></div></div>
     </div>
     <p class="fun">${esc(fun(eight, top))}</p>
     ${p.approx ? '<p class="msg-warn">추정 데이터가 섞인 펫이라 결과는 참고용이에요.</p>' : ""}
@@ -328,10 +315,6 @@ function renderResults(p, c){
     <details class="more" id="combos"><summary>가능한 조합 보기</summary><div class="body">
       <select class="sel-grade" id="gradeSel" aria-label="등급 선택">${GRADES.filter(g => c.counts[g]).map(g => `<option value="${g}">${g}등급 (${c.counts[g]}개)</option>`).join("")}</select>
       <div class="tbl-wrap" id="comboTbl"></div>
-    </div></details>
-    <details class="more"><summary>계산에 쓴 값</summary><div class="body">
-      <p>원본계수(내구/공격/방어/순발) ${p.origin.join(" / ")}, 초기치 비율 k = ${p.k}, 원본계수 합 ${p.origin.reduce((s, v) => s + v, 0)}, 보정계수 B 범위 ${b.Blo}~${b.Bhi}</p>
-      <p>총 ${c.total.toLocaleString()}개 조합이 입력과 맞았어요 (등급 보정 −2~+2 × 보너스 분배 10포인트, 전체 178,750가지 중).</p>
     </div></details>`;
   const fillCombos = () => {
     const g = Number($("gradeSel").value), list = c.matches[g] || [], cap = 200;
@@ -356,21 +339,27 @@ function selectPet(id, fromHash){
   return changed;
 }
 
-/* ===== 목록 ===== */
+/* ===== 목록 (처음에는 접어두고, 펼칠 때 만들어요) ===== */
+let listBuilt = false;
+function setListOpen(open){
+  $("listBody").hidden = !open;
+  $("listToggle").textContent = open ? "접기" : "펼치기";
+  $("listToggle").setAttribute("aria-expanded", String(open));
+  if(open && !listBuilt){ listBuilt = true; renderGrid(); }
+}
 const imgIO = ("IntersectionObserver" in window)
   ? new IntersectionObserver(es => es.forEach(e => { if(e.isIntersecting){ imgIO.unobserve(e.target); e.target.src = e.target.dataset.src; } }), { rootMargin:"300px 0px" })
   : null;
-function matchesFilter(p, q){
+function matchesFilter(p){
   if(state.mode === "fav" && !state.favs.has(p.group)) return false;
   if(state.mode === "ride" && !p.rideable) return false;
   for(const a of state.attrs){ if(!p.attrs.some(x => x[0] === a)) return false; }
-  if(!q) return true;
-  return p.name.includes(q) || p._cho.includes(expandClusters(q));
+  return true;
 }
 function listPets(){
-  const q = state.q.trim(), groups = new Map();
+  const groups = new Map();
   for(const p of PETS){
-    if(!matchesFilter(p, q)) continue;
+    if(!matchesFilter(p)) continue;
     const cur = groups.get(p.group);
     if(!cur || p.variant === "일반") groups.set(p.group, p);
   }
@@ -382,8 +371,8 @@ function listPets(){
   return list;
 }
 function renderGrid(){
-  const list = listPets();
-  $("count").textContent = `${list.length} / ${new Set(PETS.map(p => p.group)).size}종`;
+  const list = listPets(), total = new Set(PETS.map(p => p.group)).size;
+  $("count").textContent = list.length === total ? `${total}종` : `${list.length} / ${total}종`;
   if(imgIO) imgIO.disconnect();
   if(!list.length){ $("grid").innerHTML = `<div class="empty" style="grid-column:1/-1">${state.mode === "fav" ? "즐겨찾기한 펫이 없어요. 카드의 ☆를 눌러 추가해보세요." : "조건에 맞는 펫이 없어요."}</div>`; return; }
   $("grid").innerHTML = list.map(p => {
@@ -393,7 +382,7 @@ function renderGrid(){
         <span class="cimg">${p.img ? `<img data-src="${esc(p.img)}" alt="" referrerpolicy="no-referrer" decoding="async">` : ""}</span>
         <span class="cname">${esc(p.name)}</span>
         <span class="cmini">${p.attrs.map(([n, v]) => `<i style="color:${ATTR_COLOR[n] || "inherit"}">${esc(n)}${esc(v)}</i>`).join("")}</span>
-        ${p.rideable ? '<span class="ctag">탑승</span>' : ""}${p.approx ? '<span class="cwarn">추정</span>' : (p.ok ? "" : '<span class="cwarn">미지원</span>')}
+        <span class="ctags">${p.rideable ? '<span class="ctag">탑승</span>' : ""}${p.approx ? '<span class="cwarn">추정</span>' : (p.ok ? "" : '<span class="cwarn">미지원</span>')}</span>
       </button>
       <button type="button" class="star${fav ? " on" : ""}" data-fav="${esc(p.group)}" aria-pressed="${fav}" aria-label="즐겨찾기">${fav ? "★" : "☆"}</button>
     </div>`;
@@ -412,6 +401,7 @@ function markCards(){
 
 function bindControls(){
   $("chips").innerHTML = ["지","수","화","풍"].map(a => `<button type="button" class="chip" data-attr="${a}" aria-pressed="false" style="color:${ATTR_COLOR[a]}">${a}</button>`).join("");
+  $("listToggle").addEventListener("click", () => setListOpen($("listBody").hidden));
   $("chips").addEventListener("click", e => {
     const b = e.target.closest(".chip"); if(!b) return;
     const a = b.dataset.attr;
@@ -430,7 +420,6 @@ function bindControls(){
     $("sorts").querySelectorAll(".segb").forEach(x => { x.setAttribute("aria-pressed", String(x === b)); x.dataset.dir = x === b ? (state.sortDir < 0 ? "▼" : "▲") : ""; x.textContent = x.textContent.replace(/ [▼▲]$/, "") + (x.dataset.dir ? " " + x.dataset.dir : ""); });
     renderGrid();
   });
-  $("search").addEventListener("input", e => { state.q = e.target.value; renderGrid(); });
   $("grid").addEventListener("click", e => {
     const star = e.target.closest(".star");
     if(star){
@@ -465,7 +454,7 @@ function initTheme(){
 }
 
 function showNoData(msg){
-  $("hName").textContent = "펫 데이터가 아직 없어요";
+  $("hName").textContent = "펫 데이터를 못 불러왔어요";
   $("hHow").textContent = msg;
   $("results").innerHTML = `<div class="empty">${esc(msg)}</div>`;
   $("grid").innerHTML = `<div class="empty" style="grid-column:1/-1">${esc(msg)}</div>`;
@@ -473,13 +462,13 @@ function showNoData(msg){
 }
 
 (async function init(){
-  initTheme(); loadFavs(); bindControls(); initStage();
+  initTheme(); loadFavs(); bindControls(); bindPicker();
   try{ PETS = await loadPets(); }
-  catch(e){ showNoData("pets.json 파일을 불러오지 못했어요. 같은 폴더에 펫 데이터 파일이 있는지 확인해 주세요."); return; }
+  catch(e){ showNoData("pets.json 파일을 불러오지 못했어요. 잠시 뒤에 다시 열어봐 주세요."); return; }
   if(!PETS.length){ showNoData("pets.json 안에 펫이 없어요."); return; }
   PETS.forEach(p => { p._cho = chosung(p.name); byId.set(p.id, p); });
-  GMAX = [0,1,2,3].map(i => niceMax(Math.max(...PETS.map(p => p.growthS[i]))));
-  renderGrid();
+  GMAX = [0,1,2,3].map(i => Math.max(...PETS.map(p => p.growthS[i])));
+  $("count").textContent = `${new Set(PETS.map(p => p.group)).size}종`;
   const hash = decodeURIComponent((location.hash || "").slice(1));
   const first = byId.get(hash) || listPets()[0];
   if(first) selectPet(first.id, true);
