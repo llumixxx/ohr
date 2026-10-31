@@ -1,87 +1,57 @@
 <!DOCTYPE html>
-<html lang="ko" data-theme="light">
+<html lang="ko">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>OHR 환각 계산기</title>
 <meta name="description" content="오르서버 펫의 레벨 1 초기치로 가능한 등급과 +8 환각 확률을 계산해요">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Jua&family=Noto+Sans+KR:wght@400;500;700;900&display=swap" rel="stylesheet">
 <link rel="preload" href="pets.json" as="fetch" crossorigin>
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
-<nav class="nav" aria-label="메뉴">
-  <div class="nav-in">
-    <a class="brand" href="index.html"><b>OHR</b> 계산기</a>
-    <div class="nav-links" id="navLinks"></div>
-    <button class="theme" id="themeBtn" type="button">다크 모드</button>
-  </div>
-</nav>
+<div id="siteNav"></div>
 
-<header class="deck" id="hero">
-  <div class="deck-in">
-    <div class="deck-left">
-      <label class="pick-label" for="pick">펫 선택</label>
+<main class="shell">
+  <div class="calc-layout">
+    <aside class="petcard box" id="hero">
       <div class="pick">
-        <input id="pick" type="search" placeholder="이름 또는 초성으로 검색" autocomplete="off" aria-label="펫 검색">
+        <input id="pick" type="search" placeholder="펫 이름 또는 초성으로 검색" autocomplete="off" aria-label="펫 검색">
         <div class="suggest" id="suggest" role="listbox" hidden></div>
       </div>
-      <h1 id="hName">불러오는 중…</h1>
+      <div class="frame"><div class="frame-in"><span id="hImg" style="display:contents"></span></div></div>
+      <h1 class="pname" id="hName">불러오는 중…</h1>
       <div class="vtabs" id="vTabs" role="tablist" aria-label="펫 형태"></div>
       <div class="tags" id="hTags"></div>
-      <p class="hero-how" id="hHow"></p>
       <div class="attrs" id="hAttrs"></div>
-    </div>
-    <div class="screen" aria-hidden="true"><span id="hImg" style="display:contents"></span></div>
-  </div>
-  <div class="readouts" id="hSpecs"></div>
-</header>
+      <table class="stat-table">
+        <thead><tr><th></th><th>성장률</th><th>S급 초기치</th></tr></thead>
+        <tbody id="hStats"></tbody>
+      </table>
+      <p class="hero-how" id="hHow"></p>
+      <a class="btn ghost" id="dexLink" href="pokedex.html">도감에서 자세히 보기</a>
+    </aside>
 
-<main class="wrap">
-  <section class="panel" id="calcPanel">
-    <h2>레벨 1 초기치로 등급 계산</h2>
-    <p class="lead">펫을 얻었을 때(레벨 1) 정보창에 보이는 초기치를 그대로 넣어주세요.</p>
-    <div class="stat-grid" id="statGrid"></div>
-    <div class="calc-row">
-      <button class="calc-btn" id="calcBtn" type="button">등급 계산</button>
-      <button class="ghost-btn" id="resetBtn" type="button">참고 초기치로 되돌리기</button>
-    </div>
-    <div id="results"></div>
-  </section>
-
-  <section id="listSec">
-    <div class="list-head">
-      <h2>전체 펫</h2>
-      <span class="cnt" id="count"></span>
-      <button class="ghost-btn" id="listToggle" type="button" aria-expanded="false" aria-controls="listBody">펼치기</button>
-    </div>
-    <div class="list-body" id="listBody" hidden>
-      <div class="ctrl">
-        <div class="chips" id="chips" role="group" aria-label="속성"></div>
-        <div class="seg" id="modes" role="group" aria-label="보기">
-          <button type="button" class="segb" data-mode="all" aria-pressed="true">전체</button>
-          <button type="button" class="segb" data-mode="ride" aria-pressed="false">탑승 가능</button>
-          <button type="button" class="segb" data-mode="fav" aria-pressed="false">즐겨찾기</button>
-        </div>
-        <div class="seg" id="sorts" role="group" aria-label="정렬">
-          <button type="button" class="segb" data-sort="total" aria-pressed="false">총성장</button>
-          <button type="button" class="segb" data-sort="0" aria-pressed="false">내구</button>
-          <button type="button" class="segb" data-sort="1" aria-pressed="false">공격</button>
-          <button type="button" class="segb" data-sort="2" aria-pressed="false">방어</button>
-          <button type="button" class="segb" data-sort="3" aria-pressed="false">순발</button>
-        </div>
+    <section class="calc box" id="calcPanel">
+      <div class="box-h"><h2>환각 계산</h2></div>
+      <p class="lead">펫을 얻었을 때(레벨 1) 정보창에 보이는 초기치를 그대로 넣어주세요.</p>
+      <div class="stat-grid" id="statGrid"></div>
+      <div class="calc-row">
+        <button class="btn" id="calcBtn" type="button">등급 계산</button>
+        <button class="btn ghost" id="resetBtn" type="button">S급 초기치로 되돌리기</button>
       </div>
-      <div class="grid" id="grid"></div>
-    </div>
-  </section>
+      <div id="results"></div>
+    </section>
+  </div>
 
   <p class="foot">
     레벨 1 초기치에서 가능한 등급 보정(−2~+2)과 보너스 분배 10포인트의 모든 경우(178,750가지)를 대조해서 등급 확률을 구해요. 확률은 가능한 조합을 모두 같은 비율로 보고 계산해요.
-    서버 소스를 직접 볼 수 없어서 계산에 쓰는 원본계수는 표기 성장률로 거꾸로 맞춘 값이고, 실제와 다를 수 있어요.
+    서버 소스를 직접 볼 수 없어서 계산에 쓰는 원본계수는 표기 성장률로 거꾸로 맞춘 값이고, 실제와 다를 수 있어요. 오르 공식 사이트와는 관계없는 팬 도구예요.
   </p>
 </main>
 <script src="nav.js"></script>
+<script src="common.js"></script>
 <script src="app.js"></script>
 </body>
 </html>

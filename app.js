@@ -1,8 +1,6 @@
 (function(){
 "use strict";
-const $ = id => document.getElementById(id);
-const esc = s => String(s).replace(/[&<>"']/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]));
-const smooth = () => !(window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches);
+const { $, esc, smooth, ATTR_COLOR, expandClusters } = OHR;
 const f3 = v => v.toFixed(3);
 
 /* ===== 계산 (오르서버 환각 계산기와 같은 방식) ===== */
@@ -73,84 +71,11 @@ function growthRange(origin, bounds, list){
 const STAT_LABELS = ["내구력","공격력","방어력","순발력"];
 const GROW_LABELS = ["내구","공격","방어","순발"];
 const GROW_KEYS = ["h","a","d","s"];
-let PETS = [], byId = new Map(), GMAX = [10,3,3,3];
-function norm(p){
-  if(!p || !p.name) return null;
-  const arr = (a, n) => (Array.isArray(a) && a.length === n) ? a.map(Number) : null;
-  const g = arr(p.growthS, 4), i0 = arr(p.initS, 4), o = arr(p.origin, 4), k = Number(p.k);
-  return {
-    id:String(p.id), name:String(p.displayName || p.name), group:String(p.name), variant:String(p.variant || "일반"),
-    attrs:Array.isArray(p.attrs) ? p.attrs : [], obtain:String(p.obtainDetail || p.obtain || ""),
-    growthS:g || [0,0,0,0], initS:i0 || [0,0,0,0], origin:o, k:isFinite(k) ? k : null,
-    rideable:!!p.rideable, approx:!!p.approx,
-    ok:p.ok !== false && !!o && isFinite(k) && !!i0,
-    img:String(p.assetImage || p.imageUrl || "")
-  };
-}
-async function loadPets(){
-  const res = await fetch("pets.json", { cache:"no-cache" });
-  if(!res.ok) throw new Error("pets.json " + res.status);
-  const d = await res.json();
-  const rows = Array.isArray(d) ? d : (d && d.pets) || [];
-  return rows.map(norm).filter(Boolean);
-}
-
-/* ===== 초성 검색 ===== */
-const CHO = ["ㄱ","ㄲ","ㄴ","ㄷ","ㄸ","ㄹ","ㅁ","ㅂ","ㅃ","ㅅ","ㅆ","ㅇ","ㅈ","ㅉ","ㅊ","ㅋ","ㅌ","ㅍ","ㅎ"];
-function chosung(str){
-  let out = "";
-  for(const ch of str){ const c = ch.charCodeAt(0) - 0xAC00; out += (c >= 0 && c <= 11171) ? CHO[Math.floor(c/588)] : ch; }
-  return out;
-}
-const CLUSTER = { "ㄳ":"ㄱㅅ","ㄵ":"ㄴㅈ","ㄶ":"ㄴㅎ","ㄺ":"ㄹㄱ","ㄻ":"ㄹㅁ","ㄼ":"ㄹㅂ","ㄽ":"ㄹㅅ","ㄾ":"ㄹㅌ","ㄿ":"ㄹㅍ","ㅀ":"ㄹㅎ","ㅄ":"ㅂㅅ" };
-const expandClusters = s => Array.from(s).map(ch => CLUSTER[ch] || ch).join("");
-
-/* ===== 성장률 표시창 ===== */
-const tweens = new WeakMap();
-function tweenNum(el, to, ms, fmt){
-  const from = Number(el.dataset.val || 0);
-  el.dataset.val = String(to);
-  const token = {}; tweens.set(el, token);
-  if(!smooth() || ms <= 0 || from === to){ el.textContent = fmt(to); return; }
-  const t0 = performance.now();
-  const step = now => {
-    if(tweens.get(el) !== token) return;
-    const q = Math.min(1, (now - t0)/ms), e = 1 - Math.pow(1 - q, 3);
-    el.textContent = fmt(from + (to - from)*e);
-    if(q < 1) requestAnimationFrame(step);
-  };
-  requestAnimationFrame(step);
-}
-function ensureReadouts(){
-  const box = $("hSpecs");
-  if(box.firstElementChild) return;
-  box.innerHTML = GROW_KEYS.map((k, i) => `
-    <div class="ro ${k}" data-i="${i}" title="막대는 전체 펫 중 가장 높은 값과 비교한 거예요">
-      <span class="rl">${GROW_LABELS[i]} 성장률</span>
-      <div class="lcd"><span class="gv" data-val="0">0.000</span></div>
-      <div class="segs">${"<i></i>".repeat(10)}</div>
-    </div>`).join("");
-}
-function updateReadouts(p, anim){
-  ensureReadouts();
-  GROW_KEYS.forEach((k, i) => {
-    const tile = $("hSpecs").querySelector(`.ro[data-i="${i}"]`);
-    const frac = GMAX[i] > 0 ? Math.max(0, Math.min(1, p.growthS[i]/GMAX[i])) : 0;
-    const on = Math.round(frac*10);
-    tile.querySelectorAll(".segs i").forEach((s, j) => s.classList.toggle("on", j < on));
-    tweenNum(tile.querySelector(".gv"), p.growthS[i], anim ? 600 : 0, f3);
-  });
-}
-
-/* ===== 상태 ===== */
-const state = { sel:null, stat:[0,0,0,0], q:"", attrs:new Set(), mode:"all", sortKey:"", sortDir:-1, favs:new Set(), res:null };
-const FAV_KEY = "ohr-calc-favorites";
-function loadFavs(){ try{ state.favs = new Set(JSON.parse(localStorage.getItem(FAV_KEY) || "[]")); }catch(e){ state.favs = new Set(); } }
-function saveFavs(){ try{ localStorage.setItem(FAV_KEY, JSON.stringify([...state.favs])); }catch(e){} }
+let PETS = [], byId = new Map();
+const state = { sel:null, stat:[0,0,0,0] };
 
 /* ===== 선택한 펫 ===== */
 const VARIANT_ORDER = ["일반","환생","진화","환생·진화"];
-const ATTR_COLOR = { "지":"#5E9E52", "수":"#4F8FC0", "화":"#C24E3A", "풍":"#C9A227" };
 function setSprite(p){
   const holder = $("hImg"); holder.innerHTML = "";
   if(!p.img) return;
@@ -160,15 +85,16 @@ function setSprite(p){
   img.src = p.img;
   holder.appendChild(img);
 }
-function renderHero(p, anim){
+function renderHero(p){
   $("hName").textContent = p.name;
   const sibs = PETS.filter(x => x.group === p.group).sort((a, b) => VARIANT_ORDER.indexOf(a.variant) - VARIANT_ORDER.indexOf(b.variant));
   $("vTabs").innerHTML = sibs.length < 2 ? "" : sibs.map(x => `<button type="button" class="vtab" role="tab" data-id="${esc(x.id)}" aria-selected="${x.id === p.id}">${esc(x.variant)}</button>`).join("");
   $("hTags").innerHTML = (p.rideable ? '<span class="tag ride">탑승 가능</span>' : "") + (p.approx ? '<span class="tag">추정 데이터</span>' : "") + (!p.ok ? '<span class="tag">계산 미지원</span>' : "");
-  $("hHow").textContent = p.obtain ? "획득 방법: " + p.obtain : "";
+  $("hHow").textContent = p.detail ? "획득 방법: " + p.detail : "";
   $("hAttrs").innerHTML = p.attrs.map(([n, v]) => `<div class="attr-row"><span style="color:${ATTR_COLOR[n] || "var(--acc)"}">${esc(n)}</span><div class="track"><i style="width:${Number(v)*10}%;background:${ATTR_COLOR[n] || "var(--acc)"}"></i></div><span class="v">${esc(v)}/10</span></div>`).join("");
+  $("hStats").innerHTML = GROW_KEYS.map((k, i) => `<tr class="${k}"><td>${GROW_LABELS[i]}</td><td class="g">${f3(p.growthS[i])}</td><td>${p.initS[i]}</td></tr>`).join("");
+  $("dexLink").href = "pokedex.html#" + encodeURIComponent(p.id);
   setSprite(p);
-  updateReadouts(p, anim);
 }
 
 /* ===== 펫 검색창 (자동완성) ===== */
@@ -176,7 +102,7 @@ function bindPicker(){
   const inp = $("pick"), box = $("suggest");
   let act = -1, hits = [];
   const close = () => { box.hidden = true; act = -1; };
-  const choose = id => { inp.value = ""; close(); selectPet(id); inp.blur(); $("hero").scrollIntoView({ behavior: smooth() ? "smooth" : "auto", block:"start" }); };
+  const choose = id => { inp.value = ""; close(); selectPet(id); inp.blur(); };
   const render = () => {
     const q = inp.value.trim();
     if(!q || !PETS.length){ close(); return; }
@@ -209,10 +135,10 @@ function bindPicker(){
 /* ===== 초기치 입력 ===== */
 function renderStats(p){
   $("statGrid").innerHTML = STAT_LABELS.map((lbl, i) => `
-    <label class="stat-box"><span class="slabel">${lbl} <i>(참고 ${p.initS[i]})</i></span>
-      <div class="stp"><button type="button" class="sb" data-i="${i}" data-d="-1" aria-label="${lbl} 줄이기">−</button>
+    <div class="stat-box"><span class="slabel" id="sl-${i}">${lbl} <i>(S급 ${p.initS[i]})</i></span>
+      <div class="stp" role="group" aria-labelledby="sl-${i}"><button type="button" class="sb" data-i="${i}" data-d="-1" aria-label="${lbl} 줄이기">−</button>
       <input class="si" type="number" inputmode="numeric" min="0" id="stat-${i}" value="${state.stat[i]}" ${p.ok ? "" : "disabled"}>
-      <button type="button" class="sb" data-i="${i}" data-d="1" aria-label="${lbl} 늘리기">+</button></div></label>`).join("");
+      <button type="button" class="sb" data-i="${i}" data-d="1" aria-label="${lbl} 늘리기">+</button></div></div>`).join("");
   $("calcBtn").disabled = !p.ok;
 }
 let calcTimer = null;
@@ -248,6 +174,10 @@ function bindStats(){
     state.stat = p.initS.slice();
     state.stat.forEach((v, i) => { const el = $("stat-" + i); if(el) el.value = v; });
     runCalc();
+  });
+  $("vTabs").addEventListener("click", e => {
+    const b = e.target.closest(".vtab"); if(!b) return;
+    selectPet(b.dataset.id);
   });
 }
 
@@ -302,8 +232,8 @@ function renderResults(p, c){
   }).join("");
   box.innerHTML = `
     <div class="res-hero">
-      <div class="big-card"><span>최고 가능 등급</span><div class="lcd lcd-big"><strong>${top}</strong><small>등급</small></div></div>
-      <div class="big-card prob"><span>+8 환각 확률</span><div class="lcd lcd-big"><strong>${eight.toFixed(2)}</strong><small>%</small></div></div>
+      <div class="res-card"><span class="res-l">최고 가능 등급</span><div class="res-v"><strong>${top}</strong><small>등급</small></div></div>
+      <div class="res-card gold"><span class="res-l">+8 환각 확률</span><div class="res-v"><strong>${eight.toFixed(2)}</strong><small>%</small></div></div>
     </div>
     <p class="fun">${esc(fun(eight, top))}</p>
     ${p.approx ? '<p class="msg-warn">추정 데이터가 섞인 펫이라 결과는 참고용이에요.</p>' : ""}
@@ -328,149 +258,29 @@ function renderResults(p, c){
 function selectPet(id, fromHash){
   const p = byId.get(id);
   if(!p) return;
-  const changed = !state.sel || state.sel.group !== p.group;
   state.sel = p;
   state.stat = p.ok ? p.initS.slice() : [0,0,0,0];
-  renderHero(p, true);
+  renderHero(p);
   renderStats(p);
-  markCards();
   runCalc();
   if(!fromHash){ try{ history.replaceState(null, "", "#" + encodeURIComponent(p.id)); }catch(e){} }
-  return changed;
-}
-
-/* ===== 목록 (처음에는 접어두고, 펼칠 때 만들어요) ===== */
-let listBuilt = false;
-function setListOpen(open){
-  $("listBody").hidden = !open;
-  $("listToggle").textContent = open ? "접기" : "펼치기";
-  $("listToggle").setAttribute("aria-expanded", String(open));
-  if(open && !listBuilt){ listBuilt = true; renderGrid(); }
-}
-const imgIO = ("IntersectionObserver" in window)
-  ? new IntersectionObserver(es => es.forEach(e => { if(e.isIntersecting){ imgIO.unobserve(e.target); e.target.src = e.target.dataset.src; } }), { rootMargin:"300px 0px" })
-  : null;
-function matchesFilter(p){
-  if(state.mode === "fav" && !state.favs.has(p.group)) return false;
-  if(state.mode === "ride" && !p.rideable) return false;
-  for(const a of state.attrs){ if(!p.attrs.some(x => x[0] === a)) return false; }
-  return true;
-}
-function listPets(){
-  const groups = new Map();
-  for(const p of PETS){
-    if(!matchesFilter(p)) continue;
-    const cur = groups.get(p.group);
-    if(!cur || p.variant === "일반") groups.set(p.group, p);
-  }
-  const list = [...groups.values()];
-  if(state.sortKey){
-    const m = p => state.sortKey === "total" ? p.growthS[1] + p.growthS[2] + p.growthS[3] : p.growthS[Number(state.sortKey)];
-    list.sort((a, b) => (m(a) - m(b))*state.sortDir || a.name.localeCompare(b.name, "ko"));
-  }
-  return list;
-}
-function renderGrid(){
-  const list = listPets(), total = new Set(PETS.map(p => p.group)).size;
-  $("count").textContent = list.length === total ? `${total}종` : `${list.length} / ${total}종`;
-  if(imgIO) imgIO.disconnect();
-  if(!list.length){ $("grid").innerHTML = `<div class="empty" style="grid-column:1/-1">${state.mode === "fav" ? "즐겨찾기한 펫이 없어요. 카드의 ☆를 눌러 추가해보세요." : "조건에 맞는 펫이 없어요."}</div>`; return; }
-  $("grid").innerHTML = list.map(p => {
-    const fav = state.favs.has(p.group);
-    return `<div class="card">
-      <button type="button" class="card-main" data-id="${esc(p.id)}" aria-pressed="${state.sel ? state.sel.group === p.group : false}">
-        <span class="cimg">${p.img ? `<img data-src="${esc(p.img)}" alt="" referrerpolicy="no-referrer" decoding="async">` : ""}</span>
-        <span class="cname">${esc(p.name)}</span>
-        <span class="cmini">${p.attrs.map(([n, v]) => `<i style="color:${ATTR_COLOR[n] || "inherit"}">${esc(n)}${esc(v)}</i>`).join("")}</span>
-        <span class="ctags">${p.rideable ? '<span class="ctag">탑승</span>' : ""}${p.approx ? '<span class="cwarn">추정</span>' : (p.ok ? "" : '<span class="cwarn">미지원</span>')}</span>
-      </button>
-      <button type="button" class="star${fav ? " on" : ""}" data-fav="${esc(p.group)}" aria-pressed="${fav}" aria-label="즐겨찾기">${fav ? "★" : "☆"}</button>
-    </div>`;
-  }).join("");
-  $("grid").querySelectorAll("img[data-src]").forEach(im => {
-    im.onerror = () => im.remove();
-    if(imgIO) imgIO.observe(im); else im.src = im.dataset.src;
-  });
-}
-function markCards(){
-  document.querySelectorAll(".card-main").forEach(c => {
-    const p = byId.get(c.dataset.id);
-    c.setAttribute("aria-pressed", String(!!(p && state.sel && p.group === state.sel.group)));
-  });
-}
-
-function bindControls(){
-  $("chips").innerHTML = ["지","수","화","풍"].map(a => `<button type="button" class="chip" data-attr="${a}" aria-pressed="false" style="color:${ATTR_COLOR[a]}">${a}</button>`).join("");
-  $("listToggle").addEventListener("click", () => setListOpen($("listBody").hidden));
-  $("chips").addEventListener("click", e => {
-    const b = e.target.closest(".chip"); if(!b) return;
-    const a = b.dataset.attr;
-    if(state.attrs.has(a)){ state.attrs.delete(a); b.setAttribute("aria-pressed", "false"); } else { state.attrs.add(a); b.setAttribute("aria-pressed", "true"); }
-    renderGrid();
-  });
-  $("modes").addEventListener("click", e => {
-    const b = e.target.closest(".segb"); if(!b) return;
-    state.mode = b.dataset.mode;
-    $("modes").querySelectorAll(".segb").forEach(x => x.setAttribute("aria-pressed", String(x === b)));
-    renderGrid();
-  });
-  $("sorts").addEventListener("click", e => {
-    const b = e.target.closest(".segb"); if(!b) return;
-    if(state.sortKey === b.dataset.sort) state.sortDir *= -1; else { state.sortKey = b.dataset.sort; state.sortDir = -1; }
-    $("sorts").querySelectorAll(".segb").forEach(x => { x.setAttribute("aria-pressed", String(x === b)); x.dataset.dir = x === b ? (state.sortDir < 0 ? "▼" : "▲") : ""; x.textContent = x.textContent.replace(/ [▼▲]$/, "") + (x.dataset.dir ? " " + x.dataset.dir : ""); });
-    renderGrid();
-  });
-  $("grid").addEventListener("click", e => {
-    const star = e.target.closest(".star");
-    if(star){
-      const g = star.dataset.fav;
-      if(state.favs.has(g)) state.favs.delete(g); else state.favs.add(g);
-      saveFavs(); renderGrid();
-      return;
-    }
-    const m = e.target.closest(".card-main"); if(!m) return;
-    selectPet(m.dataset.id);
-    $("hero").scrollIntoView({ behavior: smooth() ? "smooth" : "auto", block:"start" });
-  });
-  $("vTabs").addEventListener("click", e => {
-    const b = e.target.closest(".vtab"); if(!b) return;
-    selectPet(b.dataset.id);
-  });
-  bindStats();
-}
-
-/* ===== 테마 ===== */
-function initTheme(){
-  const btn = $("themeBtn");
-  let t = null;
-  try{ t = localStorage.getItem("ohr-theme"); }catch(e){}
-  if(!t) t = (window.matchMedia && matchMedia("(prefers-color-scheme: dark)").matches) ? "dark" : "light";
-  const apply = v => { document.documentElement.setAttribute("data-theme", v); btn.textContent = v === "dark" ? "라이트 모드" : "다크 모드"; };
-  apply(t);
-  btn.onclick = () => {
-    const v = document.documentElement.getAttribute("data-theme") === "dark" ? "light" : "dark";
-    apply(v); try{ localStorage.setItem("ohr-theme", v); }catch(e){}
-  };
 }
 
 function showNoData(msg){
   $("hName").textContent = "펫 데이터를 못 불러왔어요";
   $("hHow").textContent = msg;
   $("results").innerHTML = `<div class="empty">${esc(msg)}</div>`;
-  $("grid").innerHTML = `<div class="empty" style="grid-column:1/-1">${esc(msg)}</div>`;
   $("calcBtn").disabled = true;
 }
 
 (async function init(){
-  initTheme(); loadFavs(); bindControls(); bindPicker();
-  try{ PETS = await loadPets(); }
+  bindPicker(); bindStats();
+  try{ PETS = await OHR.loadPets(); }
   catch(e){ showNoData("pets.json 파일을 불러오지 못했어요. 잠시 뒤에 다시 열어봐 주세요."); return; }
   if(!PETS.length){ showNoData("pets.json 안에 펫이 없어요."); return; }
-  PETS.forEach(p => { p._cho = chosung(p.name); byId.set(p.id, p); });
-  GMAX = [0,1,2,3].map(i => Math.max(...PETS.map(p => p.growthS[i])));
-  $("count").textContent = `${new Set(PETS.map(p => p.group)).size}종`;
+  PETS.forEach(p => byId.set(p.id, p));
   const hash = decodeURIComponent((location.hash || "").slice(1));
-  const first = byId.get(hash) || listPets()[0];
-  if(first) selectPet(first.id, true);
+  const first = byId.get(hash) || PETS.find(p => p.variant === "일반") || PETS[0];
+  selectPet(first.id, true);
 })();
 })();
