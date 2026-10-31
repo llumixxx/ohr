@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>OHR 데이터 갱신기</title>
+<style>
+ body{font-family:'Noto Sans KR',sans-serif;background:#10181c;color:#eee;max-width:720px;margin:40px auto;padding:0 18px;line-height:1.7}
+ h1{color:#2dd4bf} a.bm{display:inline-block;padding:12px 20px;background:#2dd4bf;color:#04110f;font-weight:800;border-radius:12px;text-decoration:none;font-size:17px}
+ code{background:#1f2a30;color:#ddd;border-radius:6px;padding:2px 6px} ol li{margin:6px 0}
+ .box{background:#16232a;border:1px solid #2c3d45;border-radius:12px;padding:14px 18px;margin:18px 0}
+</style></head><body>
+<h1>OHR 데이터 갱신기</h1>
+<p>공홈이 프로그램 접근을 막아서, 공홈을 연 <b>브라우저</b>가 대신 목록을 읽어서 깃허브에 올리는 방식이에요.
+계산기 사이트는 깃허브에 올라간 <code>pets.json</code>을 알아서 가져가요.</p>
+
+<div class="box"><b>1. 처음 한 번만</b>
+<ol>
+ <li>아래 버튼을 <b>클릭하지 말고</b> 즐겨찾기 바로 끌어다 놓기 (즐겨찾기 바가 안 보이면 <code>Ctrl+Shift+B</code>)</li>
+ <li>깃허브 토큰 만들기: github.com 프로필 &gt; <b>Settings &gt; Developer settings &gt; Fine-grained tokens &gt; Generate new token</b><br>
+   · Repository access: <b>Only select repositories &gt; llumixxx/OHR</b><br>
+   · Permissions &gt; Repository permissions &gt; <b>Contents: Read and write</b><br>
+   · 만들어진 토큰(<code>github_pat_...</code>)을 복사해두기</li>
+</ol>
+<p style="text-align:center"><a class="bm" id="bm" href="javascript:(function(){var u=[&#x27;https://llumixxx.github.io/OHR/updater.js&#x27;,&#x27;https://cdn.jsdelivr.net/gh/llumixxx/OHR@main/updater.js&#x27;],i=0;function t(){var s=document.createElement(&#x27;script&#x27;);s.src=u[i]+&#x27;?v=&#x27;+Date.now();s.onerror=function(){i++;if(i&lt;u.length){t()}else{alert(&#x27;갱신기를 못 불러왔어요. 잠시 뒤에 다시 해보세요&#x27;)}};document.body.appendChild(s)}t()})();">OHR 갱신</a></p></div>
+
+<div class="box"><b>2. 갱신할 때마다</b>
+<ol>
+ <li>공홈에 로그인하고 <a href="https://ohrsa.net/petinfo" target="_blank" style="color:#2dd4bf">페트정보 페이지</a> 열기</li>
+ <li>즐겨찾기의 <b>OHR 갱신</b> 누르기 (오른쪽 위에 창이 떠요)</li>
+ <li>처음이면 토큰을 붙여넣기 (그 브라우저에 저장돼서 다음부턴 안 물어봐요)</li>
+ <li>먼저 <b>확인만</b>을 눌러서 펫 수가 맞는지 보고, 괜찮으면 <b>갱신 시작</b></li>
+</ol>
+<p>· 공홈에는 천천히 요청해요 (페이지마다 0.7초 쉬어요)<br>· 처음에는 펫 이미지를 같이 저장하느라 몇 분 걸려요<br>· 바뀔 게 있을 때만 깃허브에 저장해요</p></div>
+
+<script>
+ document.getElementById('bm').onclick = function(e){ e.preventDefault(); alert('클릭하지 말고 즐겨찾기 바로 끌어다 놓아주세요!'); };
+</script>
+</body></html>
