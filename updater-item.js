@@ -1,5 +1,5 @@
 /* OHR 아이템 데이터 갱신기 (수동)
-   - 공홈(ohrsa.net) 아이템 페이지를 열어둔 상태에서 같은 즐겨찾기 버튼을 누르면 실행돼요
+   - 공홈(ohrsa.net) 아이템 페이지를 연 상태에서 같은 즐겨찾기 버튼을 누르면 실행돼요
    - 브라우저가 공홈 아이템 목록을 읽어서 items.json 을 만들고 깃허브(llumixxx/OHR)에 커밋 1번으로 저장해요
    - 새 아이템 이미지는 item-images/ 폴더에 사본으로 저장해요 */
 (async () => {
@@ -8,7 +8,7 @@
   const TOKEN_KEY = "ohr_gh_token";
 
   /* ── 공홈 카드 읽기 ── */
-  const KEYS = { "공":"atk", "방":"def", "순":"agi", "내":"hp", "크리":"crit", "회피":"evas", "명중":"acc", "관통":"pen", "쉘드":"shld" };
+  const KEYS = { "공":"atk", "방":"def", "순":"agi", "내":"hp", "크리":"crit", "회피":"evas", "명중":"acc", "관통":"pen", "\uc274\ub4dc":"shld" };
   function range(txt) {                                  // "+46~69" → [46,69], "-25~30" → [-25,30], "-" → null
     const t = (txt || "").replace(/[가-힣]/g, "").replace(/[+%\s]/g, "");
     if (!t || t === "-") return null;
