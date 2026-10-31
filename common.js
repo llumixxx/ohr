@@ -60,4 +60,41 @@ OHR.lazy = function(root){
   });
 };
 OHR.imgTag = p => p.img ? `<img data-src="${OHR.esc(p.img)}" alt="" referrerpolicy="no-referrer" decoding="async">` : "";
+
+/* 누르는 느낌 (물결, 진동, 반짝임, 숫자 올라가기) */
+OHR.haptic = ms => { try{ if(navigator.vibrate) navigator.vibrate(ms); }catch(e){} };
+document.addEventListener("pointerdown", e => {
+  const b = e.target.closest ? e.target.closest(".btn,.sb,.chip,.vtab,.f-seg button,.menu a,.heart") : null;
+  if(!b || b.disabled) return;
+  OHR.haptic(b.classList.contains("sb") ? 6 : 10);
+  if(!OHR.smooth() || !b.matches(".btn,.chip,.vtab,.f-seg button")) return;
+  const r = b.getBoundingClientRect(), d = Math.max(r.width, r.height)*1.7;
+  const s = document.createElement("span");
+  s.className = "rip";
+  s.style.cssText = `width:${d}px;height:${d}px;left:${e.clientX - r.left - d/2}px;top:${e.clientY - r.top - d/2}px`;
+  b.appendChild(s);
+  setTimeout(() => s.remove(), 650);
+}, { passive:true });
+OHR.spark = function(x, y){
+  if(!OHR.smooth()) return;
+  const em = ["✨","💖","⭐","🌸"];
+  for(let i=0; i<14; i++){
+    const s = document.createElement("span");
+    s.className = "spark"; s.textContent = em[i % em.length];
+    const a = Math.random()*Math.PI*2, d = 50 + Math.random()*90;
+    s.style.cssText = `left:${x}px;top:${y}px;--dx:${(Math.cos(a)*d).toFixed(0)}px;--dy:${(Math.sin(a)*d - 30).toFixed(0)}px;font-size:${12 + Math.random()*10}px`;
+    document.body.appendChild(s);
+    setTimeout(() => s.remove(), 900);
+  }
+};
+OHR.countUp = function(el, to, dec, ms){
+  if(!OHR.smooth() || ms <= 0){ el.textContent = to.toFixed(dec); return; }
+  const t0 = performance.now();
+  const step = now => {
+    const q = Math.min(1, (now - t0)/ms), e = 1 - Math.pow(1 - q, 3);
+    el.textContent = (to*e).toFixed(dec);
+    if(q < 1) requestAnimationFrame(step);
+  };
+  requestAnimationFrame(step);
+};
 })();
