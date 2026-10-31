@@ -3,6 +3,19 @@
    - 브라우저가 공홈 목록을 읽어서 pets.json 을 만들고 깃허브(llumixxx/OHR)에 커밋 1번으로 저장해요
    - 새 펫 이미지는 pet-images/ 폴더에 사본으로 저장해요 */
 (async () => {
+  /* 아이템 페이지(/item)에서 눌렀으면 아이템 갱신기를 대신 불러와요 */
+  if (/^\/item/.test(location.pathname)) {
+    const urls = ["https://llumixxx.github.io/OHR/updater-item.js", "https://cdn.jsdelivr.net/gh/llumixxx/OHR@main/updater-item.js"];
+    let i = 0;
+    const load = () => {
+      const s = document.createElement("script");
+      s.src = urls[i] + "?v=" + Date.now();
+      s.onerror = () => { i++; if (i < urls.length) load(); else alert("아이템 갱신기를 못 불러왔어요. 잠시 뒤에 다시 해보세요"); };
+      document.body.appendChild(s);
+    };
+    load();
+    return;
+  }
   const OWNER = "llumixxx", REPO = "OHR", BRANCH = "main";
   const API = `https://api.github.com/repos/${OWNER}/${REPO}`;
   const TOKEN_KEY = "ohr_gh_token";
