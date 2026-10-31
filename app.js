@@ -149,43 +149,28 @@ function renderStats(p){
       <div class="stp" role="group" aria-labelledby="sl-${i}"><button type="button" class="sb" data-i="${i}" data-d="-1" aria-label="${lbl} 줄이기">−</button>
       <input class="si" type="number" inputmode="numeric" min="0" id="stat-${i}" value="${state.stat[i]}" ${p.ok ? "" : "disabled"}>
       <button type="button" class="sb" data-i="${i}" data-d="1" aria-label="${lbl} 늘리기">+</button></div></div>`).join("");
-  $("calcBtn").disabled = !p.ok;
   updateExtras();
 }
-/* ===== 차이 표시와 초기치 모양(레이더) ===== */
+/* ===== 입력값과 S급의 차이 표시 ===== */
 function updateExtras(){
   const p = state.sel; if(!p) return;
   state.stat.forEach((v, i) => {
     const el = $("df-" + i); if(!el) return;
     const d = v - p.initS[i];
     el.className = "df " + (d === 0 ? "eq" : d > 0 ? "up" : "dn");
-    el.textContent = d === 0 ? "S급과 같아요" : (d > 0 ? "+" : "−") + Math.abs(d);
+    el.textContent = d === 0 ? "0" : (d > 0 ? "+" : "−") + Math.abs(d);
   });
-  drawRadar();
 }
-function drawRadar(){
-  const p = state.sel, box = $("radar"); if(!p || !box) return;
-  const S = p.initS, V = state.stat, cx = 130, cy = 118, R = 80;
-  const ang = [-90, 0, 90, 180].map(a => a*Math.PI/180);
-  const pt = (i, f) => [cx + Math.cos(ang[i])*R*f, cy + Math.sin(ang[i])*R*f];
-  const poly = fs => [0,1,2,3].map(i => pt(i, fs[i]).map(n => n.toFixed(1)).join(",")).join(" ");
-  const fv = [0,1,2,3].map(i => S[i] > 0 ? Math.min(1.25, V[i]/S[i])*0.8 : 0);
-  const rings = [0.4, 0.8, 1.0].map(f => `<polygon points="${poly([f,f,f,f])}" class="rg"/>`).join("");
-  const axes = [0,1,2,3].map(i => { const q = pt(i, 1); return `<line x1="${cx}" y1="${cy}" x2="${q[0].toFixed(1)}" y2="${q[1].toFixed(1)}" class="ax"/>`; }).join("");
-  const lab = (x, y, t, a) => `<text x="${x}" y="${y}" text-anchor="${a}" class="rl">${t}</text>`;
-  box.innerHTML = `<svg viewBox="0 0 260 240" role="img" aria-label="입력한 초기치와 S급 초기치 비교">
-    <defs><linearGradient id="rgd" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#5aa9f0" stop-opacity=".5"/><stop offset="1" stop-color="#3fc29a" stop-opacity=".4"/></linearGradient></defs>
-    ${rings}${axes}
-    <polygon points="${poly([0.8,0.8,0.8,0.8])}" class="rs"/>
-    <polygon points="${poly(fv)}" class="ri"/>
-    ${lab(cx, 22, "내구 " + V[0], "middle")}${lab(cx + R + 12, cy + 4, "공격 " + V[1], "start")}${lab(cx, cy + R + 24, "방어 " + V[2], "middle")}${lab(cx - R - 12, cy + 4, "순발 " + V[3], "end")}
-  </svg>`;
+let calcTimer = null, calcLast = 0;
+function scheduleCalc(){
+  if(calcTimer) return;
+  const wait = Math.max(0, 90 - (performance.now() - calcLast));
+  calcTimer = setTimeout(() => { calcTimer = null; calcLast = performance.now(); runCalc(); }, wait);
 }
-let calcTimer = null;
-function scheduleCalc(){ clearTimeout(calcTimer); calcTimer = setTimeout(runCalc, 150); }
+const bumpEl = el => { el.classList.remove("bump"); void el.offsetWidth; el.classList.add("bump"); };
 function bumpStat(i, d){
   state.stat[i] = Math.max(0, state.stat[i] + d);
-  const el = $("stat-" + i); if(el) el.value = state.stat[i];
+  const el = $("stat-" + i); if(el){ el.value = state.stat[i]; bumpEl(el); }
   updateExtras();
   scheduleCalc();
 }
@@ -208,11 +193,6 @@ function bindStats(){
     const i = Number(inp.id.replace("stat-", ""));
     const v = Math.max(0, Math.round(Number(inp.value) || 0));
     state.stat[i] = v; inp.value = v; updateExtras(); scheduleCalc();
-  });
-  $("calcBtn").addEventListener("click", e => {
-    runCalc(); OHR.haptic(24);
-    const c = state.res;
-    if(c && c.total && c.counts[8]){ const r = e.currentTarget.getBoundingClientRect(); OHR.spark(r.left + r.width/2, r.top + r.height/2); }
   });
   $("resetBtn").addEventListener("click", () => {
     const p = state.sel; if(!p) return;
@@ -262,6 +242,7 @@ function renderResults(p, c){
   if(c.total === 0){
     const same = state.stat.every((v, i) => v === p.initS[i]);
     box.classList.remove("shake"); void box.offsetWidth; box.classList.add("shake");
+    queueMods();
     box.innerHTML = `<div class="empty">${same ? "참고 초기치와 맞는 조합을 찾지 못했어요. 참고 초기치는 실제 개체와 다를 수 있으니 레벨 1 실제 수치를 넣어주세요." : `입력한 초기치(${state.stat.join(" / ")})와 맞는 조합을 찾지 못했어요. 레벨 1 수치를 확인해 주세요.`}</div>`;
     return;
   }
@@ -296,16 +277,97 @@ function renderResults(p, c){
       <select class="sel-grade" id="gradeSel" aria-label="등급 선택">${GRADES.filter(g => c.counts[g]).map(g => `<option value="${g}">${g}등급 (${c.counts[g]}개)</option>`).join("")}</select>
       <div class="tbl-wrap" id="comboTbl"></div>
     </div></details>`;
-  box.querySelectorAll(".res-card").forEach((el, i) => { el.classList.add("pop"); el.style.animationDelay = (i*80) + "ms"; });
   const nums = box.querySelectorAll(".res-v strong");
-  OHR.countUp(nums[0], top, 0, 450);
-  OHR.countUp(nums[1], eight, 2, 650);
+  OHR.countUp(nums[0], top, 0, 220);
+  OHR.countUp(nums[1], eight, 2, 300);
+  queueMods();
   const fillCombos = () => {
     const g = Number($("gradeSel").value), list = c.matches[g] || [], cap = 200;
     $("comboTbl").innerHTML = `<table class="t"><thead><tr><th>등급 보정(내/공/방/순)</th><th>보너스 분배</th><th>계산값(내림 전)</th></tr></thead><tbody>${list.slice(0, cap).map(m => `<tr><td>${m.offset.map(v => (v > 0 ? "+" : "") + v).join(" / ")}</td><td>${m.bonus.join(" / ")}</td><td>${m.raw.map(v => v.toFixed(3)).join(" / ")}</td></tr>`).join("")}</tbody></table>${list.length > cap ? `<p>${list.length}개 중 앞의 ${cap}개만 보여줘요.</p>` : ""}`;
   };
   $("gradeSel").addEventListener("change", fillCombos);
   $("combos").addEventListener("toggle", () => { if($("combos").open) fillCombos(); });
+}
+
+/* ===== 최근 계산, +- 미리보기 ===== */
+const HKEY = "ohr-hist";
+const loadHist = () => { try{ return JSON.parse(localStorage.getItem(HKEY) || "[]"); }catch(e){ return []; } };
+const saveHist = a => { try{ localStorage.setItem(HKEY, JSON.stringify(a.slice(0, 6))); }catch(e){} };
+function quick(p, stat){
+  const key = p.id + "|" + stat.join(",");
+  let c = calcCache.get(key);
+  if(!c){ c = computeGradeDist(p.origin, p.k, stat); calcCache.set(key, c); if(calcCache.size > 40) calcCache.delete(calcCache.keys().next().value); }
+  const top = GRADES.find(g => c.counts[g]);
+  return { total:c.total, top, eight: c.total ? (c.counts[8] || 0)/c.total*100 : 0 };
+}
+let modTimer = null, wiToken = 0, wiData = null;
+function queueMods(){
+  clearTimeout(modTimer);
+  modTimer = setTimeout(() => {
+    const p = state.sel, c = state.res;
+    if(p && c && c.total && state.stat.some((v, i) => v !== p.initS[i])){
+      const r = quick(p, state.stat);
+      const e = { id:p.id, name:p.name, stat:state.stat.slice(), top:r.top, eight:+r.eight.toFixed(2) };
+      saveHist([e, ...loadHist().filter(x => !(x.id === e.id && x.stat.join() === e.stat.join()))]);
+    }
+    runWhatIf();
+  }, 350);
+}
+function runWhatIf(){
+  const p = state.sel; if(!p || !p.ok){ wiData = null; renderMods(); return; }
+  const token = ++wiToken, base = state.stat.slice(), jobs = [];
+  for(let i = 0; i < 4; i++) for(const d of [-1, 1]) jobs.push([i, d]);
+  const out = { base:quick(p, base), cells:{} };
+  const step = () => {
+    if(token !== wiToken) return;
+    const j = jobs.shift();
+    if(!j){ wiData = out; renderMods(); return; }
+    const s = base.slice(); s[j[0]] = Math.max(0, s[j[0]] + j[1]);
+    out.cells[j[0] + "|" + j[1]] = quick(p, s);
+    setTimeout(step, 0);
+  };
+  step();
+}
+function renderMods(){
+  const box = $("xmods"); if(!box) return;
+  let html = "";
+  {
+    const h = loadHist();
+    html += `<div class="xm"><div class="xm-h"><b>최근 계산</b>${h.length ? '<button type="button" class="lnk" id="histClear">지우기</button>' : ""}</div>` + (h.length
+      ? `<div class="hist">${h.slice(0, 4).map((e, i) => `<button type="button" class="hrow" data-i="${i}"><span class="hn">${esc(e.name)}</span><span class="hs">${e.stat.join(" · ")}</span><span class="hr">${e.top}등급 · ${e.eight.toFixed(1)}%</span></button>`).join("")}</div>`
+      : '<p class="xm-empty">값을 바꿔서 계산하면 여기에 쌓여요. 누르면 그 값으로 돌아가요.</p>') + "</div>";
+  }
+  {
+    html += `<div class="xm"><div class="xm-h"><b>+- 미리보기</b><span class="xm-s">+8 확률</span></div>`;
+    if(!wiData){ html += '<p class="xm-empty">계산 중이에요…</p></div>'; }
+    else {
+      const cells = [];
+      for(let i = 0; i < 4; i++) for(const d of [-1, 1]) cells.push({ k:i + "|" + d, v:wiData.cells[i + "|" + d] });
+      const best = cells.reduce((m, c) => (c.v && c.v.total && c.v.eight > (m ? m.v.eight : -1)) ? c : m, null);
+      const cell = (i, d) => {
+        const v = wiData.cells[i + "|" + d];
+        const on = best && best.k === i + "|" + d && (v.eight > wiData.base.eight || !wiData.base.total);
+        return `<td class="${on ? "best" : ""}">${v && v.total ? v.eight.toFixed(1) + "%" : "–"}</td>`;
+      };
+      html += `<table class="wi"><thead><tr><th></th><th>−1</th><th>지금</th><th>+1</th></tr></thead><tbody>${[0,1,2,3].map(i => `<tr class="${GROW_KEYS[i]}"><td>${GROW_LABELS[i]}</td>${cell(i, -1)}<td class="now">${wiData.base.total ? wiData.base.eight.toFixed(1) + "%" : "–"}</td>${cell(i, 1)}</tr>`).join("")}</tbody></table>`;
+      const who = best ? GROW_LABELS[Number(best.k[0])] + "이(가) " + (best.k.endsWith("-1") ? "1 낮으면" : "1 높으면") : "";
+      html += !wiData.base.total
+        ? (best ? `<p class="xm-note">지금 값과 맞는 조합이 없어요. ${who} 맞아요 (+8 확률 <b>${best.v.eight.toFixed(1)}%</b>).</p>` : '<p class="xm-note">한 칸 차이로 맞는 조합도 없어요. 레벨 1 수치를 다시 확인해 주세요.</p>')
+        : (best && best.v.eight > wiData.base.eight
+          ? `<p class="xm-note">${GROW_LABELS[Number(best.k[0])]}이(가) ${best.k.endsWith("-1") ? "1 낮았다면" : "1 높았다면"} +8 확률이 <b>${best.v.eight.toFixed(1)}%</b>예요.</p>`
+          : '<p class="xm-note">지금 입력이 가장 좋은 조합이에요.</p>');
+      html += "</div>";
+    }
+  }
+  box.innerHTML = html;
+  const clr = $("histClear"); if(clr) clr.onclick = () => { saveHist([]); renderMods(); };
+  box.querySelectorAll(".hrow").forEach(b => b.onclick = () => {
+    const e = loadHist()[Number(b.dataset.i)]; if(!e) return;
+    selectPet(e.id);
+    state.stat = e.stat.slice();
+    state.stat.forEach((v, i) => { const el = $("stat-" + i); if(el){ el.value = v; bumpEl(el); } });
+    updateExtras(); runCalc();
+  });
 }
 
 /* ===== 선택 ===== */
@@ -324,7 +386,6 @@ function showNoData(msg){
   $("hName").textContent = "펫 데이터를 못 불러왔어요";
   $("hHow").textContent = msg;
   $("results").innerHTML = `<div class="empty">${esc(msg)}</div>`;
-  $("calcBtn").disabled = true;
 }
 
 (async function init(){
