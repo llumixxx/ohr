@@ -67,7 +67,7 @@ document.addEventListener("pointerdown", e => {
   const b = e.target.closest ? e.target.closest(".btn,.sb,.chip,.vtab,.f-seg button,.menu a,.heart") : null;
   if(!b || b.disabled) return;
   OHR.haptic(b.classList.contains("sb") ? 6 : 10);
-  if(!OHR.smooth() || !b.matches(".btn,.chip,.vtab,.f-seg button")) return;
+  if(!OHR.smooth() || !b.matches(".btn,.chip,.vtab,.f-seg button,.sb")) return;
   const r = b.getBoundingClientRect(), d = Math.max(r.width, r.height)*1.7;
   const s = document.createElement("span");
   s.className = "rip";
