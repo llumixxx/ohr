@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>OHR Mate - 환각 시뮬레이터</title>
+<meta name="description" content="오르서버 펫을 뽑고 초기화하면서 환각(8등급)이 뜰 때까지 해보고, 드는 비용을 계산해요">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Jua&family=Noto+Sans+KR:wght@400;500;700;900&display=swap" rel="stylesheet">
+<link rel="preload" href="pets.json" as="fetch" crossorigin>
+<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="enhance.css">
+<link rel="stylesheet" href="hallu.css">
+</head>
+<body>
+<div id="siteNav"></div>
+
+<main class="shell">
+  <div class="page-head">
+    <h1 class="page-title">환각 시뮬레이터</h1>
+    <p class="page-sub">펫을 뽑고 초기화하면서 환각(8등급)이 뜰 때까지 해보고, 드는 비용을 계산해요</p>
+  </div>
+  <div class="hl-layout">
+    <aside class="box hl-ctl">
+      <div class="box-h"><span class="ico">🎰</span><h2>설정</h2></div>
+      <div class="pick">
+        <input id="hlPick" type="search" placeholder="펫 이름 또는 초성으로 검색" autocomplete="off" aria-label="펫 검색">
+        <div class="suggest" id="hlSuggest" role="listbox" hidden></div>
+      </div>
+      <div id="hlPetCard"></div>
+      <div class="f-title">가격 <small>모르면 0, 선택</small></div>
+      <div class="en-prices">
+        <label>펫 1마리 (S)<input class="f-input" id="hlPetPrice" type="number" inputmode="numeric" min="0" value="0"></label>
+        <label>초기화 구슬 1개 (S)<input class="f-input" id="hlOrbPrice" type="number" inputmode="numeric" min="0" value="0"></label>
+        <label>펫 1마리당 구슬 최대 횟수<input class="f-input" id="hlMaxReset" type="number" inputmode="numeric" min="0" max="99" value="5"></label>
+      </div>
+      <label class="en-chk" style="margin-top:12px"><input type="checkbox" id="hlUseOrb" checked> 자동 진행에서 구슬 쓰기</label>
+      <p class="fine" id="hlHelp">끄면 구슬 없이 계속 새 펫을 사요 (일반 포획 펫용)</p>
+      <div class="hl-rec" id="hlRec"></div>
+    </aside>
+
+    <section class="box hl-main">
+      <div class="box-h"><span class="ico b">🐾</span><h2>시뮬레이션</h2><span class="stale-note" id="hlNote" hidden></span></div>
+      <div class="hl-device" id="hlDevice"></div>
+      <div class="hl-actions" id="hlActions"></div>
+      <div class="hl-auto" id="hlAuto"></div>
+      <div class="hl-log" id="hlLog"></div>
+    </section>
+
+    <section class="box hl-side">
+      <div class="box-h"><span class="ico">📊</span><h2>현황</h2></div>
+      <div class="en-stats" id="hlStats"></div>
+      <div class="f-title">이론값 <small>평균적으로 이만큼 걸려요</small></div>
+      <div class="hl-theory" id="hlTheory"></div>
+      <div class="f-title">이 펫의 뽑기 분포</div>
+      <div id="hlDist"></div>
+    </section>
+  </div>
+</main>
+<script src="nav.js"></script>
+<script src="common.js"></script>
+<script src="hallu.js"></script>
+</body>
+</html>
