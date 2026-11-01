@@ -10,6 +10,8 @@ const OHR_NAV_ITEMS = [
   { href: "items.html", label: "아이템 도감" },
   { href: "ride.html", label: "탑승효율" },
   { href: "stat.html", label: "능력치 계산기" },
+  { href: "enhance.html", label: "강화 시뮬레이터" },
+  { href: "hallu.html", label: "환각 시뮬레이터" },
   // 새 메뉴 예시:  { href: "새파일.html", label: "메뉴 이름" },
   { href: "https://ohrsa.net", label: "공홈", blank: true }
 ];
