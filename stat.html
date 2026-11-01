@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>OHR Mate - 능력치 계산기</title>
+<meta name="description" content="스탯 포인트를 나누고 장비를 착용해서 최종 공격력, 방어력, 내구력, 순발력을 계산해요">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Jua&family=Noto+Sans+KR:wght@400;500;700;900&display=swap" rel="stylesheet">
+<link rel="preload" href="items.json" as="fetch" crossorigin>
+<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="stat.css">
+</head>
+<body>
+<div id="siteNav"></div>
+
+<main class="shell">
+  <div class="page-head">
+    <h1 class="page-title">능력치 계산기</h1>
+    <p class="page-sub">스탯 포인트를 나누고 장비를 입혀서 최종 능력치를 계산해요</p>
+  </div>
+  <div class="sc-layout">
+    <section class="box sc-pts">
+      <div class="box-h"><span class="ico">🎯</span><h2>스탯 포인트</h2></div>
+      <div class="sc-total">
+        <span class="slabel">내 총 포인트 <i>(최대 596)</i></span>
+        <div class="stp" id="scTotalBox"></div>
+      </div>
+      <div class="sc-pool"><div class="sc-bar" id="poolBar"></div><div class="sc-legend" id="poolLegend"></div></div>
+      <div id="scRows"></div>
+      <div class="sc-pbtns"><button class="btn ghost" id="scReset" type="button">포인트 초기화</button></div>
+    </section>
+
+    <section class="box sc-equip">
+      <div class="box-h"><span class="ico b">🛡</span><h2>장비</h2><button class="btn ghost sc-small" id="scUnequip" type="button">전부 벗기</button></div>
+      <div class="sc-eq" id="scEq"></div>
+      <div class="sc-opt" id="scOpt"></div>
+    </section>
+
+    <section class="box sc-res">
+      <div class="box-h"><span class="ico">📊</span><h2>최종 능력치</h2></div>
+      <div class="sc-cards" id="scCards"></div>
+      <div class="sc-ex" id="scEx"></div>
+      <div class="sc-sets" id="scSets"></div>
+    </section>
+  </div>
+</main>
+
+<div class="modal" id="scModal" hidden>
+  <div class="mcard sc-pick" role="dialog" aria-modal="true" aria-labelledby="scPickTitle">
+    <button class="mclose" id="scPickClose" type="button" aria-label="닫기">✕</button>
+    <h3 id="scPickTitle" class="sc-pick-h">장비 고르기</h3>
+    <input id="scPickQ" class="f-input" type="search" placeholder="이름 검색 (초성 가능)" autocomplete="off" aria-label="장비 검색">
+    <div class="sc-pick-list" id="scPickList"></div>
+  </div>
+</div>
+<script src="nav.js"></script>
+<script src="common.js"></script>
+<script src="stat.js"></script>
+</body>
+</html>
