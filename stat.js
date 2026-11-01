@@ -34,7 +34,7 @@ const SLOTS = [
   { k:"aux",     label:"보조",     icon:"✨", type:"aux" },
   { k:"trinity", label:"삼위일체", icon:"🔮", type:"trinity" },
   { k:"totem",   label:"토템",     icon:"🗿", type:"totem" },
-  { k:"enchant", label:"강화",     icon:"⚒",  type:"soon" }
+  { k:"enchant", label:"강화",     icon:"⚒",  type:"info" }
 ];
 const slotDef = k => SLOTS.find(s => s.k === k);
 function itemType(it){
@@ -84,6 +84,7 @@ function norm(r){
   it.type = itemType(it);
   it.kind = it.type === "acc" ? accKind(it) : "";
   it.set = parseSet(it.desc);
+  it.enh = OHR_ENH.kindOf(it.type, it.name);   // 강화할 수 있는 장비면 "weapon" 또는 "armor"
   return it;
 }
 const roll = (it, mode) => { const o = {}; OPTKEYS.forEach(k => { const r = it.n[k]; if(r) o[k] = mode === "min" ? r[0] : mode === "mid" ? Math.round((r[0] + r[1])/2) : r[1]; }); return o; };
@@ -113,7 +114,7 @@ function toast(t){
 /* ===== 계산 ===== */
 function calc(){
   const c = statContrib(S.a), res = {}, ex = { crit:0, evas:0, acc:0, pen:0, shld:0 }, sets = {};
-  RES.forEach(r => { const p = Object.keys(c[r.k]).reduce((a, k) => a + c[r.k][k], 0); res[r.k] = { pts:p, item:0, set:0 }; });
+  RES.forEach(r => { const p = Object.keys(c[r.k]).reduce((a, k) => a + c[r.k][k], 0); res[r.k] = { pts:p, item:0, enh:0, set:0 }; });
   SLOTS.forEach(sl => {
     const e = S.eq[sl.k]; if(!e) return;
     const it = byId.get(e.id); if(!it) return;
@@ -121,6 +122,11 @@ function calc(){
     Object.keys(TO_RES).forEach(k => { res[TO_RES[k]].item += o[k] || 0; });
     ["crit", "evas", "acc", "pen", "shld"].forEach(k => { ex[k] += o[k] || 0; });
     if(it.set){ (sets[it.set.name] = sets[it.set.name] || { fx:it.set, types:[] }).types.push(it.type); }
+    if(it.enh && e.enh > 0){                      // 강화: 무기는 공격·명중·관통, 방어구는 방어·내구·쉴드
+      const g = OHR_ENH.cum(it.enh, e.enh);
+      if(g.atk) res.atk.enh += g.atk; if(g.def) res.def.enh += g.def; if(g.hp) res.hp.enh += g.hp;
+      ex.acc += g.acc || 0; ex.pen += g.pen || 0; ex.shld += g.shld || 0;
+    }
   });
   const setInfo = [];
   Object.keys(sets).forEach(name => {
@@ -128,7 +134,7 @@ function calc(){
     if(ok && s.fx.key) res[s.fx.key].set += s.fx.val;
     setInfo.push({ name, fx:s.fx, ok, have:s.types.filter(t => ["weapon", "head", "body"].indexOf(t) >= 0).length });
   });
-  RES.forEach(r => { res[r.k].out = res[r.k].pts + res[r.k].item + res[r.k].set; });
+  RES.forEach(r => { res[r.k].out = res[r.k].pts + res[r.k].item + res[r.k].enh + res[r.k].set; });
   return { res, ex, setInfo };
 }
 
@@ -164,11 +170,19 @@ function eqItem(k){ const e = S.eq[k]; return e ? byId.get(e.id) : null; }
 function renderEquip(){
   $("scEq").innerHTML = SLOTS.map(sl => {
     const it = eqItem(sl.k), e = S.eq[sl.k];
-    if(sl.type === "soon") return `<button type="button" class="sc-slot soon" data-slot="${sl.k}" disabled><span class="ic">${sl.icon}</span><span class="lb">${sl.label}</span><span class="plus">준비 중</span></button>`;
-    if(it) return `<button type="button" class="sc-slot filled${SEL === sl.k ? " sel" : ""}" data-slot="${sl.k}">${it.img ? `<img src="${esc(it.img)}" alt="" referrerpolicy="no-referrer">` : `<span class="ic">${sl.icon}</span>`}<span class="nm">${esc(it.name)}</span><span class="tt ${cls(total(e.o))}">${sgn(total(e.o))}</span></button>`;
+    if(sl.type === "info"){
+      const lv = ["weapon", "head", "body"].map(k => ({ k, e:S.eq[k] })).filter(x => x.e && x.e.enh > 0).map(x => `${slotDef(x.k).label} +${x.e.enh}`);
+      return `<button type="button" class="sc-slot info" data-slot="${sl.k}" disabled><span class="ic">${sl.icon}</span><span class="lb">강화</span><span class="plus">${lv.length ? esc(lv.join(" · ")) : "착용한 장비를 눌러서 강화"}</span></button>`;
+    }
+    if(it) return `<button type="button" class="sc-slot filled${SEL === sl.k ? " sel" : ""}" data-slot="${sl.k}">${it.img ? `<img src="${esc(it.img)}" alt="" referrerpolicy="no-referrer">` : `<span class="ic">${sl.icon}</span>`}<span class="nm">${esc(it.name)}</span><span class="tt ${cls(total(e.o))}">${sgn(total(e.o))}${e.enh > 0 ? " · +" + e.enh + "강" : ""}</span></button>`;
     return `<button type="button" class="sc-slot${SEL === sl.k ? " sel" : ""}" data-slot="${sl.k}"><span class="ic">${sl.icon}</span><span class="lb">${sl.label}</span><span class="plus">+ 장비 고르기</span></button>`;
   }).join("");
   renderOpt();
+}
+function enhHTML(it, e){
+  const lv = e.enh || 0, g = OHR_ENH.cum(it.enh, lv), L = { atk:"공격", acc:"명중", pen:"관통", def:"방어", hp:"내구", shld:OPTNAME.shld };
+  const txt = Object.keys(g).map(k => `${L[k]} +${g[k]}${k === "acc" ? "%" : ""}`).join(" · ");
+  return `<div class="sc-enh"><span>강화</span><div class="stp"><button type="button" class="sb" data-enh="-1" aria-label="강화 낮추기">−</button><b class="lv">+${lv}</b><button type="button" class="sb" data-enh="1" aria-label="강화 올리기">+</button></div><small>${txt ? esc(txt) : "강화 효과 없음"}</small></div>`;
 }
 function renderOpt(){
   const box = $("scOpt");
@@ -185,6 +199,7 @@ function renderOpt(){
   box.innerHTML = `<div class="sc-ohead">${it.img ? `<img src="${esc(it.img)}" alt="" referrerpolicy="no-referrer">` : ""}<div><b>${esc(it.name)}${it.set ? `<span class="sc-set-tag">${esc(it.set.name)} 세트</span>` : ""}</b><small>${esc(sl.label)} · 합계 ${sgn(total(e.o))}${it.kind ? " · " + it.kind : ""}</small></div></div>
     <div class="sc-rolls"><button type="button" class="chip" data-roll="min">최소</button><button type="button" class="chip" data-roll="mid">중간</button><button type="button" class="chip" data-roll="max">최대</button></div>
     ${rows || '<div class="empty" style="padding:10px">조절할 수치가 없어요.</div>'}
+    ${it.enh ? enhHTML(it, e) : '<div class="sc-enh off">이 장비는 강화할 수 없어요</div>'}
     <div class="sc-ofoot"><button type="button" class="btn ghost" id="scOpen">바꾸기</button><button type="button" class="btn ghost" id="scOff">벗기</button></div>`;
 }
 
@@ -194,6 +209,7 @@ function renderResult(){
   $("scCards").innerHTML = RES.map(x => {
     const v = r.res[x.k];
     const parts = [`포인트 <b>${v.pts}</b>`, `장비 <b class="${cls(v.item)}">${sgn(v.item)}</b>`];
+    if(v.enh) parts.push(`강화 <b class="${cls(v.enh)}">${sgn(v.enh)}</b>`);
     if(v.set) parts.push(`세트 <b class="${cls(v.set)}">${sgn(v.set)}</b>`);
     return `<div class="sc-card ${x.cls || ""}"><div class="l">${x.n}</div><div class="v">${v.out}</div><div class="p">${parts.join(" · ")}</div></div>`;
   }).join("");
@@ -235,7 +251,7 @@ function equip(slotKey, id){
       if(o && o.kind === it.kind){ toast(`같은 종류(${it.kind})는 하나만 착용할 수 있어요`); return; }
     }
   }
-  S.eq[slotKey] = { id, o:roll(it, "max") };
+  S.eq[slotKey] = { id, o:roll(it, "max"), enh:0 };
   save(); closePicker(); SEL = slotKey; renderAll();
 }
 
@@ -276,6 +292,8 @@ function bind(){
   $("scOpt").addEventListener("click", e => {
     if(e.target.closest("#scOpen")){ openPicker(SEL); return; }
     if(e.target.closest("#scOff")){ delete S.eq[SEL]; SEL = null; save(); renderAll(); return; }
+    const en = e.target.closest("[data-enh]");
+    if(en && SEL && S.eq[SEL] && eqItem(SEL) && eqItem(SEL).enh){ S.eq[SEL].enh = Math.max(0, Math.min(OHR_ENH.MAX, (S.eq[SEL].enh || 0) + Number(en.dataset.enh))); save(); renderAll(); return; }
     const r = e.target.closest("[data-roll]");
     if(r && SEL && eqItem(SEL)){ S.eq[SEL].o = roll(eqItem(SEL), r.dataset.roll); save(); renderAll(); }
   });
