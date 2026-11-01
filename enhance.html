@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>OHR Mate - 강화 시뮬레이터</title>
+<meta name="description" content="오르서버 장비 강화를 해보고, 목표 강화까지 드는 평균 비용과 파괴 개수를 확인해요">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Jua&family=Noto+Sans+KR:wght@400;500;700;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="enhance.css">
+</head>
+<body>
+<div id="siteNav"></div>
+
+<main class="shell">
+  <div class="page-head">
+    <h1 class="page-title">강화 시뮬레이터</h1>
+    <p class="page-sub">장비 강화를 직접 해보고, 목표까지 드는 평균 비용과 파괴 개수를 확인해요</p>
+  </div>
+  <div class="en-layout">
+    <aside class="box en-ctl">
+      <div class="box-h"><span class="ico">⚒</span><h2>설정</h2></div>
+      <div class="f-title">장비 종류</div>
+      <div class="f-seg" id="enKind"></div>
+      <div class="f-title">강화 수치 <small>지금 장비의 단계</small></div>
+      <div id="enStartBox"></div>
+      <div class="f-title">강화 보조제</div>
+      <div class="f-seg" id="enAssist"></div>
+      <div class="f-title">가격 <small>모르면 0, 선택</small></div>
+      <div class="en-prices">
+        <label>장비 1개 (S)<input class="f-input" id="enItemPrice" type="number" inputmode="numeric" min="0" value="0"></label>
+        <label>보조제 1개 (S)<input class="f-input" id="enAssistPrice" type="number" inputmode="numeric" min="0" value="0"></label>
+      </div>
+      <div class="en-rule" id="enRule"></div>
+    </aside>
+
+    <section class="box en-main">
+      <div class="box-h"><span class="ico b">🔥</span><h2>강화</h2><span class="stale-note" id="enNotice" hidden></span></div>
+      <div class="en-hero" id="enHero"></div>
+      <div class="en-msg" id="enMsg"></div>
+      <div class="en-actions">
+        <button class="btn" id="enTry" type="button">강화 시도</button>
+        <button class="btn ghost" id="enNew" type="button">새 장비로 시작</button>
+      </div>
+      <div class="en-auto">
+        <span>목표</span>
+        <select id="enTarget" class="f-input" aria-label="목표 강화"></select>
+        <button class="btn ghost" id="enAuto" type="button">목표까지 자동</button>
+        <label class="en-chk"><input type="checkbox" id="enKeep"> 파괴돼도 계속</label>
+      </div>
+      <div class="en-log" id="enLog"></div>
+    </section>
+
+    <section class="box en-side">
+      <div class="box-h"><span class="ico">📊</span><h2>통계</h2><button class="btn ghost sc-small" id="enClear" type="button">초기화</button></div>
+      <div class="en-stats" id="enStats"></div>
+      <div class="f-title">목표별 평균 <small>지금 단계에서 출발</small></div>
+      <div class="tbl-wrap"><table class="t en-exp" id="enExpect"></table></div>
+      <div class="en-mc">
+        <button class="btn ghost" id="enMC" type="button">목표까지 1,000번 돌려보기</button>
+        <div id="enMCOut"></div>
+      </div>
+    </section>
+  </div>
+
+  <section class="box en-tables">
+    <div class="box-h"><span class="ico b">📋</span><h2>강화 표</h2></div>
+    <div class="tbl-wrap"><table class="t" id="enRates"></table></div>
+    <div class="en-two">
+      <div><div class="f-title">무기류 능력치 (도끼, 곤봉, 창, 활)</div><div class="tbl-wrap"><table class="t" id="enGainW"></table></div></div>
+      <div><div class="f-title">방어구류 능력치 (투구, 갑옷)</div><div class="tbl-wrap"><table class="t" id="enGainA"></table></div></div>
+    </div>
+  </section>
+</main>
+<script src="nav.js"></script>
+<script src="common.js"></script>
+<script src="enh-data.js"></script>
+<script src="enhance.js"></script>
+</body>
+</html>
