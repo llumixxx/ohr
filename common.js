@@ -11,7 +11,7 @@ OHR.CATS = ["필드포획","퀘스트","희귀","레이드","복권","듀얼","�
 OHR.catOf = p => OHR.CATS.indexOf(p.cat) >= 0 ? p.cat : "기타";
 
 /* 공홈에서 환생·진화 분류에 잘못 들어가 있지만 실제로는 일반 펫인 것들 (환각 계산기에 나오게 해요) */
-const AS_NORMAL = ["모사크"];
+const AS_NORMAL = ["모사크", "흑풍"];
 OHR.norm = function(p){
   if(!p || !p.name) return null;
   const asNormal = AS_NORMAL.indexOf(String(p.name)) >= 0;
