@@ -10,12 +10,15 @@ OHR.ATTR_COLOR = { "지":"#4aa84a", "수":"#3d8ee0", "화":"#e5604a", "풍":"#d2
 OHR.CATS = ["필드포획","퀘스트","희귀","레이드","복권","듀얼","환생,진화","지원","기타"];
 OHR.catOf = p => OHR.CATS.indexOf(p.cat) >= 0 ? p.cat : "기타";
 
+/* 공홈에서 환생·진화 분류에 잘못 들어가 있지만 실제로는 일반 펫인 것들 (환각 계산기에 나오게 해요) */
+const AS_NORMAL = ["모사크"];
 OHR.norm = function(p){
   if(!p || !p.name) return null;
+  const asNormal = AS_NORMAL.indexOf(String(p.name)) >= 0;
   const arr = (a, n) => (Array.isArray(a) && a.length === n) ? a.map(Number) : null;
   const g = arr(p.growthS, 4), i0 = arr(p.initS, 4), o = arr(p.origin, 4), k = Number(p.k);
   return {
-    id:String(p.id), name:String(p.displayName || p.name), group:String(p.name), variant:String(p.variant || "일반"),
+    id:String(p.id), name:String(asNormal ? p.name : (p.displayName || p.name)), group:String(p.name), variant:asNormal ? "일반" : String(p.variant || "일반"),
     attrs:Array.isArray(p.attrs) ? p.attrs : [], cat:String(p.obtain || ""), detail:String(p.obtainDetail || p.obtain || ""),
     growthS:g || [0,0,0,0], initS:i0 || [0,0,0,0], origin:o, k:isFinite(k) ? k : null,
     rideable:!!p.rideable, approx:!!p.approx,
